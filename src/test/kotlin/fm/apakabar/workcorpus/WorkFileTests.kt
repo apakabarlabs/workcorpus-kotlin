@@ -168,10 +168,10 @@ class WorkFileTests {
     }
 
     @Test
-    fun `a work file whose parts leave a gap is refused`() {
-        val gapped = Fixtures.work().replace("id: '2'", "id: '4'")
+    fun `a work file whose pieces skip a number is refused as out of order`() {
+        val skipped = Fixtures.work().replace("id: '2'", "id: '4'")
 
-        val error = assertFailsWith<WorkCorpus.CorpusError> { WorkCorpus.decodeWork(gapped) }
+        val error = assertFailsWith<WorkCorpus.CorpusError> { WorkCorpus.decodeWork(skipped) }
         assertEquals(WorkCorpus.CorpusError.OutOfOrder(expected = 2, found = 4), error)
     }
 

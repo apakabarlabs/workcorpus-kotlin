@@ -1,6 +1,7 @@
 package fm.apakabar.workcorpus
 
 import com.charleskorn.kaml.Yaml
+import com.charleskorn.kaml.YamlConfiguration
 import com.charleskorn.kaml.YamlException
 import com.charleskorn.kaml.YamlInput
 import com.charleskorn.kaml.YamlList
@@ -49,11 +50,13 @@ internal sealed class Node {
     ) : Node()
 }
 
+private val unlimitedYaml = Yaml(configuration = YamlConfiguration(codePointLimit = Int.MAX_VALUE))
+
 internal fun parseYaml(yaml: String): Node {
     refuseYamlProblems(yaml)
     val root =
         try {
-            Yaml.default.parseToYamlNode(yaml)
+            unlimitedYaml.parseToYamlNode(yaml)
         } catch (failure: YamlException) {
             throw WorkCorpus.DocumentError("The work cannot be read as YAML: ${failure.message}", failure)
         }

@@ -44,7 +44,25 @@ class LargeWorkTests {
         assertTrue(elapsed < BUDGET, "took $elapsed")
     }
 
+    @Test
+    fun `a book of more code points than kaml reads by default is read`() {
+        val line = "A line of verse, ".repeat(40)
+        val book = book(repeatingInLast = false).replace("[A line of verse.]", "['$line']")
+
+        assertTrue(book.codePointCount(0, book.length) > DEFAULT_CODE_POINT_LIMIT, "only ${book.length}")
+        assertEquals(
+            line,
+            WorkCorpus
+                .decodeWorkFromBook(book)
+                .pieces
+                .last()
+                .lines
+                .single(),
+        )
+    }
+
     private companion object {
+        const val DEFAULT_CODE_POINT_LIMIT = 3_145_728
         const val PIECES = 5000
         val BUDGET = 5.seconds
     }

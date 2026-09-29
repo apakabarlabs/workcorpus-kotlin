@@ -32,7 +32,7 @@ private class Collection(
 internal fun refuseYamlProblems(yaml: String) {
     val open = ArrayDeque<Collection>()
     try {
-        for (event in Parse(LoadSettings()).parse(yaml)) visit(event, open)
+        for (event in Parse(LoadSettings(codePointLimit = Int.MAX_VALUE)).parse(yaml)) visit(event, open)
     } catch (unreadable: YamlEngineException) {
         return
     }

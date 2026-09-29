@@ -77,6 +77,9 @@
   refused with `WorkShapeError.ExplicitTag`, naming the field. The parser's
   events are read once, in document order, and the first of these problems, or
   of a repeated key, is the one reported.
+- A work file or book of any length is read, as the lead reads it: the limit of
+  3,145,728 code points that kaml and snakeyaml-engine put on a document by
+  default is lifted.
 - `PieceAsset` compares a stem and a file name in Unicode normalization form C and
   reads only the ASCII digits `0` to `9` as the digits of a piece number.
 - The lead's `Piece.passage` and `PieceStanding` are not ported yet. Both are built

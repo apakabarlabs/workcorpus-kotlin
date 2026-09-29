@@ -406,6 +406,12 @@ cases:
     with: "  - <<: {short: Opening}\n    title: Opening poems\n"
     error: yamlReference
     refused: "The work's parts[0] is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
+  - case: a merge key with a scalar value is refused, naming the part
+    fixture: book-with-listening
+    replace: "  - title: Opening poems\n"
+    with: "  - <<: foo\n    title: Opening poems\n"
+    error: yamlReference
+    refused: "The work's parts[0] is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
   - case: an anchor in a work file is refused, naming the field
     fixture: work
     replace: "reading:\n"

@@ -66,10 +66,16 @@ internal fun parseYaml(yaml: String): Node {
                     ?.key
             throw WorkCorpus.WorkShapeError.RepeatedKey(key ?: repeated.key, repeated)
         } catch (failure: YamlException) {
+            val segments = failure.path.segments
+            val merge = segments.indexOfFirst(::isMerge)
+            if (merge >= 0) throw WorkCorpus.WorkShapeError.YamlReference(referencePlace(segments.take(merge)), failure)
             throw WorkCorpus.DocumentError("The work cannot be read as YAML: ${failure.message}", failure)
         }
     return yamlNode(root, place = "")
 }
+
+private fun isMerge(segment: YamlPathSegment): Boolean =
+    segment is YamlPathSegment.Merge || (segment is YamlPathSegment.MapElementKey && segment.key == "<<")
 
 internal fun treeOf(decoder: Decoder): Node =
     when (decoder) {

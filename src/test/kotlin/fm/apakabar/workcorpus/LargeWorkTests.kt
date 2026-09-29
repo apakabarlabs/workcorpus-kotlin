@@ -9,13 +9,21 @@ import kotlin.time.measureTimedValue
 
 class LargeWorkTests {
     private fun book(repeatingInLast: Boolean): String =
+        book(
+            buildString {
+                append("pieces:\n")
+                for (number in 1..PIECES) {
+                    append("  - number: $number\n    title: Piece $number\n")
+                    if (repeatingInLast && number == PIECES) append("    title: Again\n")
+                    append("    lines: [A line of verse.]\n")
+                }
+            },
+        )
+
+    private fun book(pieces: String): String =
         buildString {
-            append("language: eng\npieces:\n")
-            for (number in 1..PIECES) {
-                append("  - number: $number\n    title: Piece $number\n")
-                if (repeatingInLast && number == PIECES) append("    title: Again\n")
-                append("    lines: [A line of verse.]\n")
-            }
+            append("language: eng\n")
+            append(pieces)
             append("parts:\n  - title: All\n    summary: Every piece.\n    first: 1\n")
             append("    last: $PIECES\n")
             append("free: [1]\n")
@@ -59,6 +67,28 @@ class LargeWorkTests {
                 .lines
                 .single(),
         )
+    }
+
+    @Test
+    fun `a large book written as one multi-line flow list with a repeat near its end`() {
+        val pieces =
+            buildString {
+                append("pieces: [\n")
+                for (number in 1..PIECES) {
+                    val again = if (number == PIECES) " title: Again," else ""
+                    append("  {number: $number, title: Piece $number,$again lines: [A line.]},\n")
+                }
+                append("]\n")
+            }
+        val book = book(pieces)
+
+        assertTrue(book.startsWith("language: eng\npieces: [\n"))
+        val (refusal, elapsed) =
+            measureTimedValue {
+                assertFailsWith<WorkCorpus.WorkShapeError.RepeatedKey> { WorkCorpus.decodeWorkFromBook(book) }
+            }
+        assertEquals(WorkCorpus.WorkShapeError.RepeatedKey("title"), refusal)
+        assertTrue(elapsed < BUDGET, "took $elapsed")
     }
 
     private companion object {

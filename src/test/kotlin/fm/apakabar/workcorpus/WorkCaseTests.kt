@@ -9,6 +9,7 @@ import org.junit.jupiter.api.TestFactory
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @Serializable
 data class WorkCase(
@@ -19,12 +20,18 @@ data class WorkCase(
     val error: String? = null,
     val refused: String? = null,
     val read: WorkReadingCase? = null,
+    val breaks: String? = null,
 ) {
     fun document(): String {
         val base = if (source == "json-book") WorkCases.shared().jsonBook else Fixtures.text(source)
-        if (replace == null) return base
-        assertEquals(2, base.split(replace).size, "$replace is not in $source once")
-        return base.replace(replace, with.orEmpty())
+        val document =
+            if (replace == null) {
+                base
+            } else {
+                assertEquals(2, base.split(replace).size, "$replace is not in $source once")
+                base.replace(replace, with.orEmpty())
+            }
+        return if (breaks == null) document else document.replace("\n", breaks)
     }
 
     fun read(document: String): Work =
@@ -90,8 +97,12 @@ class WorkCaseTests {
     fun `a work is read, or refused, as the shared cases say`(): List<DynamicTest> =
         WorkCases.shared().cases.map { shared ->
             DynamicTest.dynamicTest(shared.name) {
-                assertEquals(shared.refused == null, shared.error == null, "a refusal names its error")
-                assertNotEquals(shared.refused == null, shared.read == null, "a case is read or refused")
+                assertNotEquals(shared.error == null, shared.read == null, "a case is read or refused")
+                assertTrue(shared.error != null || shared.refused == null, "only a refusal says a text")
+                assertTrue(
+                    shared.refused != null || shared.error == null || shared.error == DOCUMENT_ERROR,
+                    "a refusal says its text, unless it is the parser's own",
+                )
                 val document = shared.document()
                 val work =
                     try {
@@ -102,8 +113,10 @@ class WorkCaseTests {
                         return@dynamicTest expect(refusal, shared)
                     } catch (refusal: WorkCorpus.WorkError) {
                         return@dynamicTest expect(refusal, shared)
+                    } catch (refusal: WorkCorpus.DocumentError) {
+                        return@dynamicTest expect(refusal, shared)
                     }
-                assertNull(shared.refused, "read, though the case expects: ${shared.refused}")
+                assertNull(shared.error, "read, though the case expects ${shared.error}")
                 shared.read?.check(work)
             }
         }
@@ -113,6 +126,10 @@ class WorkCaseTests {
         shared: WorkCase,
     ) {
         assertEquals(shared.error, refusal.javaClass.simpleName.replaceFirstChar { it.lowercase() })
-        assertEquals(shared.refused, refusal.message)
+        if (shared.refused != null || shared.error != DOCUMENT_ERROR) assertEquals(shared.refused, refusal.message)
+    }
+
+    private companion object {
+        const val DOCUMENT_ERROR = "documentError"
     }
 }

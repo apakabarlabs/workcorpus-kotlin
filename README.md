@@ -118,8 +118,10 @@ test with the default `Json`; it checks no relationships between the fields, a
 JSON syntax error reaches the caller as kotlinx.serialization's own error, and a
 key repeated in one JSON object is not refused, the value kept possibly differing
 from the lead's. The YAML rules hold only through `decodeWork` and
-`decodeWorkFromBook`. Keys equal only under Unicode canonical equivalence count
-as one key in the lead and as two here, a rare difference no case pins.
+`decodeWorkFromBook`. Two rare differences from the lead no case pins: keys equal
+only under Unicode canonical equivalence count as one key there and as two here,
+and `!!str` written on a quoted value or on a key is refused here while the
+lead, which cannot see it, reads the value as untagged.
 
 ## Install
 

@@ -49,8 +49,9 @@
   problems, the one first in the document is reported, and of several keys
   repeated on one line, as a flow mapping can, the first written; the lead names
   the first in code-point order there. Keys equal only under Unicode canonical
-  equivalence count as one key in the lead and as two here, a rare difference no
-  case pins. A YAML document the parser cannot read at all is refused with
+  equivalence count as one key in the lead and as two here, and `!!str` on a
+  quoted value or on a key is refused here while the lead reads it as untagged:
+  rare differences no case pins. A YAML document the parser cannot read at all is refused with
   `WorkCorpus.DocumentError`, as are a missing field and a value of the wrong
   kind, naming the field.
 - A work file or book of any length is read, as the lead reads it: the limit of

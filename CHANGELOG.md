@@ -33,6 +33,12 @@
   `null`, or left empty after its key or dash. Empty text is written as `""`, as a
   blank line of a poem is. A null `short`, `summary` of a work-file section or
   `cuts` reads as none.
+- The stage field bounds, `stage_field.*` in a book and `reading.*_below` in a
+  work file, follow the one writing numbers follow: in YAML plain decimal digits
+  with an optional `-` and fractional part, such as `0.001` or `1`; in JSON a JSON
+  number. A quoted value, a boolean, null, or in YAML `0.5_0`, `.5`, `5e-1` or
+  sexagesimal `1:00` is refused with `WorkShapeError.InvalidFraction`, naming the
+  field.
 - `Work`, `Piece`, `Part`, `StageFieldScale` and `DifficultWordsConfiguration`
   are `@Serializable` with serializers of their own on the stable
   kotlinx.serialization API. Decoded from YAML through kaml or from JSON through

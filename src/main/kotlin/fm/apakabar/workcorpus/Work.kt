@@ -29,6 +29,10 @@ import kotlinx.serialization.encoding.encodeStructure
  * a fraction, a value past 32 bits and `-0` are refused as in YAML. The value is taken
  * exactly as written, so `5.000000000000000001` is a fraction.
  *
+ * The stage field bounds are fractions held to the same one writing: in YAML, plain
+ * decimal digits with an optional `-` and fractional part, such as `0.001` or `1`, and
+ * never quoted, with `_`, an exponent or as sexagesimal; in JSON, a JSON number.
+ *
  * A work is written out in full. A YAML anchor, an alias or a `<<` merge key, quoted or
  * not, is refused with [WorkCorpus.WorkShapeError.YamlReference], since YAML readers do
  * not resolve them alike.

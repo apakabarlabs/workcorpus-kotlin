@@ -40,11 +40,18 @@ internal fun Node.fraction(): Double {
     val scalar = this as? Node.Scalar
     val number =
         scalar
-            ?.takeIf { it.bare }
+            ?.takeIf { it.bare && (it.json || isPlainFraction(it.text)) }
             ?.text
             ?.toDoubleOrNull()
             ?.takeIf { it.isFinite() }
-    return number ?: throw mismatch("a number")
+    return number ?: throw WorkCorpus.WorkShapeError.InvalidFraction(place)
+}
+
+private fun isPlainFraction(written: String): Boolean {
+    val whole = written.substringBefore('.')
+    val fraction = written.substringAfter('.', missingDelimiterValue = "")
+    val wholeIsPlain = isPlainDecimal(whole) || whole == "-0"
+    return wholeIsPlain && ('.' !in written || (fraction.isNotEmpty() && fraction.all { it in '0'..'9' }))
 }
 
 internal fun isPlainDecimal(written: String): Boolean {

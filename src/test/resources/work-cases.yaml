@@ -124,6 +124,29 @@ cases:
     replace: '"lines": ["The first line."]'
     with: '"lines": ["", "The first line."]'
     read: {lines: ["", The first line.]}
+  - case: a JSON fraction given as a string is refused, naming the field
+    fixture: json-book
+    replace: '"begun_below": 0.5'
+    with: '"begun_below": "0.5"'
+    error: invalidFraction
+    refused: "The work's stage_field.begun_below is not a decimal number written as plain digits."
+  - case: a JSON fraction given as true is refused
+    fixture: json-book
+    replace: '"begun_below": 0.5'
+    with: '"begun_below": true'
+    error: invalidFraction
+    refused: "The work's stage_field.begun_below is not a decimal number written as plain digits."
+  - case: a JSON fraction given as null is refused
+    fixture: json-book
+    replace: '"begun_below": 0.5'
+    with: '"begun_below": null'
+    error: invalidFraction
+    refused: "The work's stage_field.begun_below is not a decimal number written as plain digits."
+  - case: a JSON fraction written with an exponent is read by its value
+    fixture: json-book
+    replace: '"begun_below": 0.5'
+    with: '"begun_below": 25e-2'
+    read: {bands: [0.001, 0.25, 1.0]}
   - case: a cut written as -0 is refused
     fixture: book-with-listening
     replace: "    lines: [The first line.]\n"
@@ -243,6 +266,52 @@ cases:
     with: "id: null"
     error: nullText
     refused: "The work's sections[1].pieces[0].id is null where text belongs; an empty text is written as \"\"."
+  - case: a fraction in quotes is refused, naming the field
+    fixture: book-with-listening
+    replace: "  untouched_below: 0.001\n"
+    with: "  untouched_below: '0.001'\n"
+    error: invalidFraction
+    refused: "The work's stage_field.untouched_below is not a decimal number written as plain digits."
+  - case: a fraction written with an underscore is refused
+    fixture: book-with-listening
+    replace: "  begun_below: 0.5\n"
+    with: "  begun_below: 0.5_0\n"
+    error: invalidFraction
+    refused: "The work's stage_field.begun_below is not a decimal number written as plain digits."
+  - case: a fraction written as sexagesimal is refused
+    fixture: book-with-listening
+    replace: "  most_below: 1.0\n"
+    with: "  most_below: 1:00\n"
+    error: invalidFraction
+    refused: "The work's stage_field.most_below is not a decimal number written as plain digits."
+  - case: a fraction written with an exponent is refused in YAML
+    fixture: book-with-listening
+    replace: "  begun_below: 0.5\n"
+    with: "  begun_below: 5e-1\n"
+    error: invalidFraction
+    refused: "The work's stage_field.begun_below is not a decimal number written as plain digits."
+  - case: a fraction written without its leading zero is refused
+    fixture: book-with-listening
+    replace: "  begun_below: 0.5\n"
+    with: "  begun_below: .5\n"
+    error: invalidFraction
+    refused: "The work's stage_field.begun_below is not a decimal number written as plain digits."
+  - case: a work file fraction in quotes is refused, naming the field
+    fixture: work
+    replace: "  untouched_below: 0.001\n"
+    with: "  untouched_below: '0.001'\n"
+    error: invalidFraction
+    refused: "The work's reading.untouched_below is not a decimal number written as plain digits."
+  - case: a fraction written in plain digits is read by its value
+    fixture: book-with-listening
+    replace: "  begun_below: 0.5\n"
+    with: "  begun_below: 0.25\n"
+    read: {bands: [0.001, 0.25, 1.0]}
+  - case: a bound written as a whole number is read as that fraction
+    fixture: book-with-listening
+    replace: "  most_below: 1.0\n"
+    with: "  most_below: 1\n"
+    read: {bands: [0.001, 0.5, 1.0]}
   - case: a piece identifier written with + is refused
     fixture: work
     replace: "id: '3'"

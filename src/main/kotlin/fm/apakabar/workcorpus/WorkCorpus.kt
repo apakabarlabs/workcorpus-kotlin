@@ -136,6 +136,15 @@ object WorkCorpus {
             val place: String,
         ) : WorkShapeError("The work's $place is null where text belongs; an empty text is written as \"\".")
 
+        /**
+         * A field that holds a fraction holds something else: a quoted string, a boolean,
+         * null, or in YAML a number written other than as plain decimal digits with an
+         * optional fractional part, such as `0.5_0`, `.5`, `5e-1` or `1:00`.
+         */
+        data class InvalidFraction(
+            val place: String,
+        ) : WorkShapeError("The work's $place is not a decimal number written as plain digits.")
+
         final override fun toString(): String = "${javaClass.name}: $message"
     }
 

@@ -1,5 +1,10 @@
 package fm.apakabar.workcorpus
 
+import com.charleskorn.kaml.YamlException
+import com.charleskorn.kaml.YamlInput
+import com.charleskorn.kaml.YamlPath
+import com.charleskorn.kaml.YamlPathSegment
+import com.charleskorn.kaml.YamlScalar
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -27,23 +32,25 @@ import kotlinx.serialization.encoding.Encoder
  * @property cutSizes Per-stage sizes of consecutive line groups, keyed by [ReadingStage.label].
  * A work that names no cuts, or names them as null, decodes with an empty table.
  * @throws WorkCorpus.WorkShapeError naming the piece and the stage when the cuts do not
- * divide the lines.
+ * divide the lines, or naming the field when a number decoded from YAML is not an
+ * integer within 32 bits.
  */
 @Serializable
 data class Piece(
-    val number: Long,
+    @Serializable(with = WholeNumberSerializer::class)
+    val number: Int,
     val title: String,
     val lines: List<String>,
     @SerialName("cuts")
     @Serializable(with = CutsSerializer::class)
-    val cutSizes: Map<String, List<Long>> = emptyMap(),
+    val cutSizes: Map<String, List<Int>> = emptyMap(),
 ) {
     init {
         WorkCorpus.validateCuts(piece = number, lines = lines.size, cutSizes = cutSizes)
     }
 
     /** Stable identity, equal to the piece number. */
-    val id: Long get() = number
+    val id: Int get() = number
 
     /** First printed line, or an empty string when the piece has no lines. */
     val openingLine: String get() = lines.firstOrNull() ?: ""
@@ -63,46 +70,50 @@ data class Piece(
         }
 
         var start = 0
-        return sizes.map { size -> (start until start + size.toInt()).also { start += size.toInt() } }
+        return sizes.map { size -> (start until start + size).also { start += size } }
     }
 }
 
-internal object CutSizeSerializer : KSerializer<Long> {
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("fm.apakabar.workcorpus.CutSize", PrimitiveKind.LONG)
+internal object WholeNumberSerializer : KSerializer<Int> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("fm.apakabar.workcorpus.WholeNumber", PrimitiveKind.INT)
 
-    override fun deserialize(decoder: Decoder): Long {
-        val text = decoder.decodeString()
-        return saturatedLong(text) ?: throw IllegalArgumentException("A cut size of $text is not a whole number of lines.")
+    override fun deserialize(decoder: Decoder): Int {
+        if (decoder !is YamlInput) return decoder.decodeInt()
+        val place = place(decoder.node.path)
+        val scalar = decoder.node as? YamlScalar
+        if (scalar == null || !scalar.plain) throw WorkCorpus.WorkShapeError.InvalidNumber(place)
+        return try {
+            decoder.decodeInt()
+        } catch (failure: YamlException) {
+            throw WorkCorpus.WorkShapeError.InvalidNumber(place, failure)
+        }
     }
 
     override fun serialize(
         encoder: Encoder,
-        value: Long,
-    ) = encoder.encodeLong(value)
+        value: Int,
+    ) = encoder.encodeInt(value)
+
+    private fun place(path: YamlPath): String =
+        path.segments
+            .joinToString("") { segment ->
+                when (segment) {
+                    is YamlPathSegment.ListEntry -> "[${segment.index}]"
+                    is YamlPathSegment.MapElementKey -> ".${segment.key}"
+                    else -> ""
+                }
+            }.removePrefix(".")
 }
 
-internal object CutsSerializer : KSerializer<Map<String, List<Long>>> {
-    private val table = MapSerializer(String.serializer(), ListSerializer(CutSizeSerializer))
+internal object CutsSerializer : KSerializer<Map<String, List<Int>>> {
+    private val table = MapSerializer(String.serializer(), ListSerializer(WholeNumberSerializer))
 
     override val descriptor: SerialDescriptor = table.nullable.descriptor
 
-    override fun deserialize(decoder: Decoder): Map<String, List<Long>> = decoder.decodeSerializableValue(table.nullable) ?: emptyMap()
+    override fun deserialize(decoder: Decoder): Map<String, List<Int>> = decoder.decodeSerializableValue(table.nullable) ?: emptyMap()
 
     override fun serialize(
         encoder: Encoder,
-        value: Map<String, List<Long>>,
+        value: Map<String, List<Int>>,
     ) = encoder.encodeSerializableValue(table, value)
-}
-
-internal fun saturatedLong(text: String): Long? {
-    val negative = text.startsWith("-")
-    val digits = if (negative || text.startsWith("+")) text.substring(1) else text
-    if (digits.isEmpty() || !digits.all { it in '0'..'9' }) return null
-    var magnitude = 0L
-    for (digit in digits) {
-        val value = (digit - '0').toLong()
-        if (magnitude > (Long.MAX_VALUE - value) / 10) return if (negative) Long.MIN_VALUE else Long.MAX_VALUE
-        magnitude = magnitude * 10 + value
-    }
-    return if (negative) -magnitude else magnitude
 }

@@ -12,13 +12,13 @@ package fm.apakabar.workcorpus
  * @property cutSizes Per-stage sizes of consecutive line groups.
  */
 data class HeldPiece(
-    val number: Long,
+    val number: Int,
     val title: String,
     val lines: List<String>,
     val partTitle: String,
     val partShort: String?,
     val partSummary: String,
-    val cutSizes: Map<String, List<Long>> = emptyMap(),
+    val cutSizes: Map<String, List<Int>> = emptyMap(),
 )
 
 /**
@@ -35,25 +35,26 @@ data class HeldReading(
     val begunBelow: Double,
     val mostBelow: Double,
     val difficultWordScore: Int,
-    val free: List<Long>,
+    val free: List<Int>,
 )
 
 private data class OpenPart(
     val title: String,
     val short: String?,
     val summary: String,
-    val first: Long,
-    val last: Long,
+    val first: Int,
+    val last: Int,
 )
 
 internal fun assemble(
     language: String,
     pieces: List<HeldPiece>,
     reading: HeldReading,
-): Work =
-    Work(
+): Work {
+    val made = pieces.map { Piece(number = it.number, title = it.title, lines = it.lines, cutSizes = it.cutSizes) }
+    return Work(
         language = language,
-        pieces = pieces.map { Piece(number = it.number, title = it.title, lines = it.lines, cutSizes = it.cutSizes) },
+        pieces = made,
         parts =
             assembleParts(pieces).map {
                 Part(title = it.title, summary = it.summary, first = it.first, last = it.last, short = it.short)
@@ -67,12 +68,13 @@ internal fun assemble(
             ),
         difficultWords = DifficultWordsConfiguration(scoreThreshold = reading.difficultWordScore),
     )
+}
 
 private fun assembleParts(pieces: List<HeldPiece>): List<OpenPart> {
     val parts = mutableListOf<OpenPart>()
     for (piece in pieces) {
         val open = parts.lastOrNull()
-        if (open != null && open.title == piece.partTitle && open.last + 1 == piece.number) {
+        if (open != null && open.title == piece.partTitle && open.last.toLong() + 1 == piece.number.toLong()) {
             parts[parts.lastIndex] = open.copy(last = piece.number)
         } else {
             parts +=

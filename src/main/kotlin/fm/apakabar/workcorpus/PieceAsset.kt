@@ -13,7 +13,8 @@ import kotlin.math.absoluteValue
  *
  * Names are compared in Unicode normalization form C, so a stem and a name that spell
  * the same letters with precomposed and combining marks still match. Only the ASCII
- * digits `0` to `9` are read as the digits of a piece number.
+ * digits `0` to `9` are read as the digits of a piece number, and a number read from a
+ * name fits in 32 bits.
  *
  * @property stem Work-specific prefix placed in every generated asset name.
  */
@@ -21,37 +22,37 @@ class PieceAsset(
     val stem: String,
 ) {
     /** Returns the zero-padded base name of a numbered piece. */
-    fun name(piece: Long): String = "$stem-${padded(piece, PIECE_DIGITS)}"
+    fun name(piece: Int): String = "$stem-${padded(piece, PIECE_DIGITS)}"
 
     /** Returns the relative MP3 path for a piece and narration voice. */
     fun recording(
-        piece: Long,
+        piece: Int,
         voice: NarrationVoice,
     ): String = "${voice.rawValue}/${name(piece)}.mp3"
 
     /** Returns the JSON alignment filename for a piece and narration voice. */
     fun alignment(
-        piece: Long,
+        piece: Int,
         voice: NarrationVoice,
     ): String = "${name(piece)}-${voice.rawValue}.json"
 
     /** Returns a stable base name for a shared line attempt. */
     fun sharedReading(
-        piece: Long,
+        piece: Int,
         line: Int,
         heard: String?,
     ): String {
-        val place = "s${padded(piece, PIECE_DIGITS)}-l${padded(line.toLong(), LINE_DIGITS)}"
+        val place = "s${padded(piece, PIECE_DIGITS)}-l${padded(line, LINE_DIGITS)}"
         val said = slug(heard ?: "")
         return if (said.isEmpty()) place else "$place-$said"
     }
 
     /** Extracts a piece number from a filename belonging to this work. */
-    fun number(inName: String): Long? {
+    fun number(inName: String): Int? {
         val bare = withoutExtension(inName)
         val prefix = "${composed(stem)}-"
         if (!bare.startsWith(prefix)) return null
-        return bare.removePrefix(prefix).takeWhile { it in '0'..'9' }.toLongOrNull()
+        return bare.removePrefix(prefix).takeWhile { it in '0'..'9' }.toIntOrNull()
     }
 
     /**
@@ -74,11 +75,10 @@ class PieceAsset(
         const val WORDS_WORTH_READING_IN_A_FILE_NAME = 8
 
         fun padded(
-            number: Long,
+            number: Int,
             width: Int,
         ): String {
-            val digits =
-                if (number == Long.MIN_VALUE) "9223372036854775808" else number.absoluteValue.toString()
+            val digits = number.toLong().absoluteValue.toString()
             val sign = if (number < 0) "-" else ""
             return sign + "0".repeat(maxOf(0, width - sign.length - digits.length)) + digits
         }

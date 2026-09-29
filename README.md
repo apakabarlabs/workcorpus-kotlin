@@ -34,6 +34,30 @@ only one book.
 
 ## Use
 
+A work file names the work, its language and what a reading of it is held to,
+and files its pieces under the sections they belong to:
+
+```yaml
+slug: poems
+language: eng
+title: Poems
+reading:
+  untouched_below: 0.001
+  begun_below: 0.5
+  most_below: 1.0
+  difficult_word_score: 3
+  free: ['1']
+sections:
+  - title: Opening poems
+    summary: The first part.
+    pieces:
+      - id: '1'
+        title: First poem
+        lines: [The first line., The second line., The third line.]
+        cuts:
+          block: [2, 1]
+```
+
 ```kotlin
 import fm.apakabar.workcorpus.ReadingStage
 import fm.apakabar.workcorpus.WorkCorpus
@@ -41,15 +65,22 @@ import fm.apakabar.workcorpus.WorkCorpus
 val work = WorkCorpus.decodeWork(yaml)
 val piece = work.pieces[0]
 val firstBlock = piece.cuts(ReadingStage.BLOCK)[0]
+
+check(work.language == "eng")
+check(firstBlock == 0..1)
 ```
 
-`decodeWork` reads the nested work file, `decodeWorkFromBook` the assembled book,
-and `WorkCorpus.work(language, pieces, reading)` assembles values a caller
-already holds. `Work.language` is the language the work names itself as written
-in; nothing here assumes one. All three refuse a work whose pieces are not
-numbered from one in order, whose parts do not cover it exactly once, whose
-reading thresholds do not make sense, which names no language, or whose cuts do
-not fit its pieces, and say which.
+`decodeWork` reads a work file, `decodeWorkFromBook` an assembled book, and
+`WorkCorpus.work(language, pieces, reading)` assembles values a caller already
+holds. `Work.language` is the language tag the work gives, such as `en`, `eng`
+or `en-GB`; nothing here assumes one. Every number a work carries is a YAML
+integer that fits in 32 bits.
+
+All three refuse a malformed work with an error that says what is wrong and
+where: pieces not numbered from one in order, parts that do not cover the work
+exactly once, reading thresholds out of order, a language that is not a
+language tag, a number that is not a 32-bit integer, or cuts that do not add up
+to the lines of their piece.
 
 ## Install
 

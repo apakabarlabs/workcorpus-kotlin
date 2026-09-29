@@ -1,7 +1,10 @@
 package fm.apakabar.workcorpus
 
+import com.charleskorn.kaml.YamlException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -82,7 +85,7 @@ class WorkTests {
         val book = Fixtures.text("book-with-listening").replace("language: eng\n", "")
 
         assertNotEquals(Fixtures.text("book-with-listening"), book)
-        val error = assertFailsWith<Exception> { WorkCorpus.decodeWorkFromBook(book) }
+        val error = assertFailsWith<YamlException> { WorkCorpus.decodeWorkFromBook(book) }
         assertTrue("language" in error.message.orEmpty(), error.message)
     }
 
@@ -142,18 +145,48 @@ class WorkTests {
         assertEquals(emptyMap(), WorkCorpus.decodeWorkFromBook(book).pieces[0].cutSizes)
     }
 
-    @Test
-    fun `a cut too large to count is refused naming the piece and the stage`() {
-        val book =
-            Fixtures.text("book-with-listening").replace(
-                "    lines: [The first line.]\n",
-                "    lines: [The first line.]\n    cuts:\n      block: [99999999999999999999]\n",
-            )
+    @ParameterizedTest
+    @MethodSource("invalidNumbers")
+    fun `a book number that is not a YAML integer within 32 bits is refused, naming the field`(
+        written: String,
+        replaced: String,
+        place: String,
+    ) {
+        val book = Fixtures.text("book-with-listening").replace(written, replaced)
 
         assertNotEquals(Fixtures.text("book-with-listening"), book)
+        val error = assertFailsWith<WorkCorpus.WorkShapeError.InvalidNumber> { WorkCorpus.decodeWorkFromBook(book) }
+        assertEquals(WorkCorpus.WorkShapeError.InvalidNumber(place), error)
+    }
+
+    @Test
+    fun `what is wrong with a number is said naming the field, with the parser's reason kept`() {
+        val book = Fixtures.text("book-with-listening").replace("free: [1]\n", "free: [2147483648]\n")
+        val error = assertFailsWith<WorkCorpus.WorkShapeError.InvalidNumber> { WorkCorpus.decodeWorkFromBook(book) }
+
+        assertEquals("The work's free[0] is not a whole number that fits in 32 bits.", error.message)
+        assertTrue(error.cause is YamlException)
+    }
+
+    @Test
+    fun `a part that runs past the last piece is refused rather than overflowing`() {
+        val work = work(parts = listOf(Part(title = "All", summary = "", first = 1, last = Int.MAX_VALUE)))
+
         assertEquals(
-            WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = Long.MAX_VALUE, lines = 1),
-            assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> { WorkCorpus.decodeWorkFromBook(book) },
+            WorkCorpus.WorkShapeError.PartOutOfRange(first = 1, last = Int.MAX_VALUE),
+            assertFailsWith<WorkCorpus.WorkShapeError.PartOutOfRange> { WorkCorpus.validateConfiguration(work) },
+        )
+    }
+
+    @Test
+    fun `a part that ends before it starts, or starts before piece one, cannot be made`() {
+        assertEquals(
+            WorkCorpus.WorkShapeError.PartOutOfRange(first = 3, last = 2),
+            assertFailsWith<WorkCorpus.WorkShapeError.PartOutOfRange> { Part(title = "Back", summary = "", first = 3, last = 2) },
+        )
+        assertEquals(
+            WorkCorpus.WorkShapeError.PartOutOfRange(first = 0, last = 2),
+            assertFailsWith<WorkCorpus.WorkShapeError.PartOutOfRange> { Part(title = "Early", summary = "", first = 0, last = 2) },
         )
     }
 
@@ -161,19 +194,37 @@ class WorkTests {
         language: String = "eng",
         threshold: Int = 3,
         parts: List<Part>? = null,
-        free: List<Long> = listOf(1),
+        free: List<Int> = listOf(1),
     ): Work {
         val pieces =
-            (1L..20L).map { number ->
+            (1..20).map { number ->
                 Piece(number = number, title = "Piece $number", lines = listOf("A line of verse,"))
             }
         return Work(
             language = language,
             pieces = pieces,
-            parts = parts ?: listOf(Part(title = "The work", summary = "", first = 1, last = pieces.size.toLong())),
+            parts = parts ?: listOf(Part(title = "The work", summary = "", first = 1, last = pieces.size)),
             free = free,
             stageField = StageFieldScale(untouchedBelow = 0.001, begunBelow = 0.5, mostBelow = 1.0),
             difficultWords = DifficultWordsConfiguration(scoreThreshold = threshold),
         )
+    }
+
+    companion object {
+        private const val LINES = "    lines: [The first line.]\n"
+
+        @JvmStatic
+        fun invalidNumbers(): List<Arguments> =
+            listOf(
+                Arguments.of(LINES, "$LINES    cuts:\n      block: [2147483648]\n", "pieces[0].cuts.block[0]"),
+                Arguments.of(LINES, "$LINES    cuts:\n      block: [99999999999999999999]\n", "pieces[0].cuts.block[0]"),
+                Arguments.of(LINES, "$LINES    cuts:\n      block: ['1']\n", "pieces[0].cuts.block[0]"),
+                Arguments.of(LINES, "$LINES    cuts:\n      block: [1.0]\n", "pieces[0].cuts.block[0]"),
+                Arguments.of(LINES, "$LINES    cuts:\n      block: [true]\n", "pieces[0].cuts.block[0]"),
+                Arguments.of("  - number: 1\n", "  - number: '1'\n", "pieces[0].number"),
+                Arguments.of("    last: 1\n", "    last: '1'\n", "parts[0].last"),
+                Arguments.of("free: [1]\n", "free: [2147483648]\n", "free[0]"),
+                Arguments.of("  score_threshold: 3\n", "  score_threshold: 3.5\n", "difficult_words.score_threshold"),
+            )
     }
 }

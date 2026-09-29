@@ -1,7 +1,10 @@
 package fm.apakabar.workcorpus
 
+import com.charleskorn.kaml.YamlException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -13,7 +16,7 @@ class WorkFileTests {
     fun `the pieces come out of the work file numbered and in order`() {
         val read = assembleWork(Fixtures.work())
 
-        assertEquals(listOf(1L, 2L, 3L), read.pieces.map { it.number })
+        assertEquals(listOf(1, 2, 3), read.pieces.map { it.number })
         assertEquals(listOf("When forty winters shall besiege thy brow,"), read.pieces[1].lines)
     }
 
@@ -38,7 +41,7 @@ class WorkFileTests {
 
         assertEquals(listOf("The Procreation Sonnets", "The Fair Youth"), read.parts.map { it.title })
         assertEquals("The Procreation", read.parts[0].shortTitle)
-        assertEquals(1L..2L, read.parts[0].pieces)
+        assertEquals(1..2, read.parts[0].pieces)
         assertEquals("The Fair Youth", read.parts[1].shortTitle)
     }
 
@@ -46,7 +49,7 @@ class WorkFileTests {
     fun `the reading thresholds come off the reading block`() {
         val read = assembleWork(Fixtures.work())
 
-        assertEquals(listOf(1L, 2L), read.free)
+        assertEquals(listOf(1, 2), read.free)
         assertEquals(StageFieldScale.Band.UNTOUCHED, read.stageField.band(0.0005))
         assertEquals(3, read.difficultWords.scoreThreshold)
     }
@@ -64,7 +67,7 @@ class WorkFileTests {
         val unnamed = Fixtures.work().replace("language: eng\n", "")
 
         assertNotEquals(Fixtures.work(), unnamed)
-        val error = assertFailsWith<Exception> { WorkCorpus.decodeWork(unnamed) }
+        val error = assertFailsWith<YamlException> { WorkCorpus.decodeWork(unnamed) }
         assertTrue("language" in error.message.orEmpty(), error.message)
     }
 
@@ -98,18 +101,27 @@ class WorkFileTests {
         )
     }
 
-    @Test
-    fun `a work file whose cut is too large to count is refused naming piece and stage`() {
-        val huge =
-            Fixtures.work().replace(
-                "          block:\n            - 2\n",
-                "          block:\n            - -99999999999999999999\n",
-            )
+    @ParameterizedTest
+    @MethodSource("invalidNumbers")
+    fun `a work file number that is not a YAML integer within 32 bits is refused, naming the field`(
+        written: String,
+        replaced: String,
+        place: String,
+    ) {
+        val changed = Fixtures.work().replace(written, replaced)
 
-        assertNotEquals(Fixtures.work(), huge)
+        assertNotEquals(Fixtures.work(), changed)
+        val error = assertFailsWith<WorkCorpus.WorkShapeError.InvalidNumber> { WorkCorpus.decodeWork(changed) }
+        assertEquals(WorkCorpus.WorkShapeError.InvalidNumber(place), error)
+    }
+
+    @Test
+    fun `a piece identifier past 32 bits is refused as not a number`() {
+        val past = Fixtures.work().replace("id: '3'", "id: '2147483648'")
+
         assertEquals(
-            WorkCorpus.WorkShapeError.EmptyCut(piece = 1, stage = "block", size = Long.MIN_VALUE),
-            assertFailsWith<WorkCorpus.WorkShapeError.EmptyCut> { WorkCorpus.decodeWork(huge) },
+            WorkCorpus.WorkError.PieceIsNotNumbered("2147483648"),
+            assertFailsWith<WorkCorpus.WorkError> { assembleWork(past) },
         )
     }
 
@@ -151,7 +163,7 @@ class WorkFileTests {
         val untitled = Fixtures.work().replace("        title: Sonnet 2\n", "")
 
         assertNotEquals(Fixtures.work(), untitled)
-        val error = assertFailsWith<Exception> { WorkCorpus.decodeWork(untitled) }
+        val error = assertFailsWith<YamlException> { WorkCorpus.decodeWork(untitled) }
         assertTrue("title" in error.message.orEmpty(), error.message)
     }
 
@@ -161,5 +173,27 @@ class WorkFileTests {
 
         val error = assertFailsWith<WorkCorpus.CorpusError> { WorkCorpus.decodeWork(gapped) }
         assertEquals(WorkCorpus.CorpusError.OutOfOrder(expected = 2, found = 4), error)
+    }
+
+    companion object {
+        @JvmStatic
+        fun invalidNumbers(): List<Arguments> =
+            listOf(
+                Arguments.of(
+                    "          block:\n            - 2\n",
+                    "          block:\n            - -99999999999999999999\n",
+                    "sections[0].pieces[0].cuts.block[0]",
+                ),
+                Arguments.of(
+                    "          block:\n            - 2\n",
+                    "          block:\n            - '2'\n",
+                    "sections[0].pieces[0].cuts.block[0]",
+                ),
+                Arguments.of(
+                    "  difficult_word_score: 3\n",
+                    "  difficult_word_score: true\n",
+                    "reading.difficult_word_score",
+                ),
+            )
     }
 }

@@ -1,7 +1,9 @@
 package fm.apakabar.workcorpus
 
 import org.junit.jupiter.api.Test
+import java.text.Normalizer
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 
 class PieceAssetTests {
@@ -24,43 +26,45 @@ class PieceAssetTests {
         val percent = PieceAsset(stem = "100%d-%@")
 
         assertEquals("100%d-%@-004", percent.name(4))
-        assertEquals(4L, percent.number(inName = "100%d-%@-004.mp3"))
+        assertEquals(4, percent.number(inName = "100%d-%@-004.mp3"))
     }
 
     @Test
-    fun `a number past 32 bits is written in full`() {
-        assertEquals("sonnet-5000000000", asset.name(5_000_000_000))
+    fun `the largest 32-bit number is written in full, and nothing past it is read`() {
+        assertEquals("sonnet-2147483647", asset.name(2_147_483_647))
         assertEquals("sonnet--04", asset.name(-4))
-        assertEquals(5_000_000_000L, asset.number(inName = "sonnet-5000000000.mp3"))
-        assertEquals("s5000000000-l03", asset.sharedReading(piece = 5_000_000_000, line = 3, heard = null))
+        assertEquals(2_147_483_647, asset.number(inName = "sonnet-2147483647.mp3"))
+        assertNull(asset.number(inName = "sonnet-2147483648.mp3"))
+        assertEquals("s2147483647-l03", asset.sharedReading(piece = 2_147_483_647, line = 3, heard = null))
     }
 
     @Test
     fun `a stem and a name spelled with combining marks still match`() {
-        val composed = PieceAsset(stem = "café")
-        val decomposed = PieceAsset(stem = "café")
+        val composed = Normalizer.normalize("café", Normalizer.Form.NFC)
+        val decomposed = Normalizer.normalize("café", Normalizer.Form.NFD)
 
-        assertEquals(4L, composed.number(inName = "café-004.mp3"))
-        assertEquals(4L, decomposed.number(inName = "café-004.mp3"))
-        assertEquals(4L, decomposed.number(inName = "café-004.mp3"))
+        assertNotEquals(composed, decomposed)
+        assertEquals(4, PieceAsset(stem = composed).number(inName = "$decomposed-004.mp3"))
+        assertEquals(4, PieceAsset(stem = decomposed).number(inName = "$composed-004.mp3"))
     }
 
     @Test
     fun `only ASCII digits are read as the digits of a number`() {
         val stem = PieceAsset(stem = "s")
+        val arabicThree = "٣"
 
-        assertEquals(12L, stem.number(inName = "s-12三"))
-        assertNull(stem.number(inName = "s-٣"))
+        assertEquals(12, stem.number(inName = "s-12三"))
+        assertNull(stem.number(inName = "s-$arabicThree"))
         assertEquals(NarrationVoice("三"), stem.voice(inName = "s-001-三"))
-        assertEquals(NarrationVoice("٣"), stem.voice(inName = "s-001-٣"))
+        assertEquals(NarrationVoice(arabicThree), stem.voice(inName = "s-001-$arabicThree"))
         assertNull(stem.voice(inName = "s-001-042"))
     }
 
     @Test
     fun `a number is read from a bare name, never from a path`() {
-        assertEquals(4L, asset.number(inName = "sonnet-004.mp3"))
-        assertEquals(4L, asset.number(inName = "sonnet-004"))
-        assertEquals(18L, asset.number(inName = "sonnet-018-onyx.json"))
+        assertEquals(4, asset.number(inName = "sonnet-004.mp3"))
+        assertEquals(4, asset.number(inName = "sonnet-004"))
+        assertEquals(18, asset.number(inName = "sonnet-018-onyx.json"))
         assertNull(asset.number(inName = asset.recording(4, voice = NarrationVoice.onyx)))
         assertNull(asset.number(inName = ""))
     }
@@ -101,9 +105,11 @@ class PieceAssetTests {
 
     @Test
     fun `a letter written with a combining mark stays in its word`() {
+        val decomposed = Normalizer.normalize("café", Normalizer.Form.NFD)
+
         assertEquals(
-            "s001-l01-नमस्ते-café",
-            asset.sharedReading(piece = 1, line = 1, heard = "नमस्ते, Café!"),
+            "s001-l01-नमस्ते-$decomposed",
+            asset.sharedReading(piece = 1, line = 1, heard = "नमस्ते, ${decomposed.uppercase()}!"),
         )
     }
 }

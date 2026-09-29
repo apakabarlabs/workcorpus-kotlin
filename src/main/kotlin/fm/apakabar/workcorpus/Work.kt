@@ -10,6 +10,9 @@ import kotlinx.serialization.Serializable
  * the complete work before use. Decoding this type directly with [serializer] does not
  * validate relationships between its fields.
  *
+ * Every number a work carries, from piece numbers to cut sizes, is a YAML integer that
+ * fits in 32 bits.
+ *
  * @property language Language the work is written in, as the work names it: a language
  * tag such as `en`, `eng` or `en-GB`. It arrives with the work rather than being
  * assumed, because the same reading mechanics carry works in other languages.
@@ -25,7 +28,10 @@ data class Work internal constructor(
     val language: String,
     val pieces: List<Piece>,
     val parts: List<Part>,
-    val free: List<Long>,
+    val free: List<
+        @Serializable(with = WholeNumberSerializer::class)
+        Int,
+    >,
     @SerialName("stage_field") val stageField: StageFieldScale,
     @SerialName("difficult_words") val difficultWords: DifficultWordsConfiguration,
 )
@@ -39,5 +45,7 @@ data class Work internal constructor(
  */
 @Serializable
 data class DifficultWordsConfiguration(
-    @SerialName("score_threshold") val scoreThreshold: Int,
+    @SerialName("score_threshold")
+    @Serializable(with = WholeNumberSerializer::class)
+    val scoreThreshold: Int,
 )

@@ -21,7 +21,9 @@ internal data class WorkReading(
     @SerialName("untouched_below") val untouchedBelow: Double,
     @SerialName("begun_below") val begunBelow: Double,
     @SerialName("most_below") val mostBelow: Double,
-    @SerialName("difficult_word_score") val difficultWordScore: Int,
+    @SerialName("difficult_word_score")
+    @Serializable(with = WholeNumberSerializer::class)
+    val difficultWordScore: Int,
     val free: List<String>,
 )
 
@@ -40,7 +42,7 @@ internal data class WorkPiece(
     val title: String,
     val lines: List<String>,
     @Serializable(with = CutsSerializer::class)
-    val cuts: Map<String, List<Long>> = emptyMap(),
+    val cuts: Map<String, List<Int>> = emptyMap(),
 )
 
 internal fun assembleWork(yaml: String): Work {
@@ -73,11 +75,11 @@ internal fun assembleWork(yaml: String): Work {
     )
 }
 
-private fun numbered(id: String): Long = id.toStrictLongOrNull() ?: throw WorkCorpus.WorkError.PieceIsNotNumbered(id)
+private fun numbered(id: String): Int = id.toStrictIntOrNull() ?: throw WorkCorpus.WorkError.PieceIsNotNumbered(id)
 
-private fun String.toStrictLongOrNull(): Long? {
-    val digits = removePrefix("+").removePrefix("-")
-    return if (digits.isNotEmpty() && digits.all { it in '0'..'9' }) toLongOrNull() else null
+private fun String.toStrictIntOrNull(): Int? {
+    val digits = if (startsWith("+") || startsWith("-")) substring(1) else this
+    return if (digits.isNotEmpty() && digits.all { it in '0'..'9' }) toIntOrNull() else null
 }
 
 private fun parts(sections: List<WorkSection>): List<WorkSection> =

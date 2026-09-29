@@ -145,6 +145,15 @@ object WorkCorpus {
             val place: String,
         ) : WorkShapeError("The work's $place is not a decimal number written as plain digits.")
 
+        /** A YAML mapping names the same key more than once. The parser's own error is kept as the cause. */
+        data class RepeatedKey(
+            val key: String,
+        ) : WorkShapeError("The work names $key more than once in one mapping.") {
+            internal constructor(key: String, cause: Throwable) : this(key) {
+                initCause(cause)
+            }
+        }
+
         final override fun toString(): String = "${javaClass.name}: $message"
     }
 

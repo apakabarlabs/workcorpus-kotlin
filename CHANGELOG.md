@@ -39,6 +39,13 @@
   number. A quoted value, a boolean, null, or in YAML `0.5_0`, `.5`, `5e-1` or
   sexagesimal `1:00` is refused with `WorkShapeError.InvalidFraction`, naming the
   field.
+- A YAML mapping that names a key twice is refused with
+  `WorkShapeError.RepeatedKey`, naming the key. A key the work does not know is
+  skipped, in YAML and in JSON alike, whatever the `Json` configuration says of
+  unknown keys, since the library reads the JSON tree itself; the tests decode
+  with the default `Json`. A key repeated in one JSON object is not refused:
+  kotlinx.serialization keeps one of the values in the tree the library reads,
+  as `JSONDecoder` does for the lead.
 - `Work`, `Piece`, `Part`, `StageFieldScale` and `DifficultWordsConfiguration`
   are `@Serializable` with serializers of their own on the stable
   kotlinx.serialization API. Decoded from YAML through kaml or from JSON through

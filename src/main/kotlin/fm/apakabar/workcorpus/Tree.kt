@@ -1,5 +1,6 @@
 package fm.apakabar.workcorpus
 
+import com.charleskorn.kaml.DuplicateKeyException
 import com.charleskorn.kaml.ForbiddenAnchorOrAliasException
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlException
@@ -57,6 +58,13 @@ internal fun parseYaml(yaml: String): Node {
             Yaml.default.parseToYamlNode(yaml)
         } catch (reference: ForbiddenAnchorOrAliasException) {
             throw WorkCorpus.WorkShapeError.YamlReference(referencePlace(reference.path.segments), reference)
+        } catch (repeated: DuplicateKeyException) {
+            val key =
+                repeated.duplicatePath.segments
+                    .filterIsInstance<YamlPathSegment.MapElementKey>()
+                    .lastOrNull()
+                    ?.key
+            throw WorkCorpus.WorkShapeError.RepeatedKey(key ?: repeated.key, repeated)
         } catch (failure: YamlException) {
             throw WorkCorpus.DocumentError("The work cannot be read as YAML: ${failure.message}", failure)
         }

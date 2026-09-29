@@ -84,6 +84,8 @@ internal fun treeOf(decoder: Decoder): Node =
         else -> throw WorkCorpus.DocumentError("A work is read from YAML or JSON, not from ${decoder::class.simpleName}.")
     }
 
+private val CORE_SCHEMA_NULLS = setOf("", "~", "null", "Null", "NULL")
+
 private fun yamlNode(
     node: YamlNode,
     place: String,
@@ -93,7 +95,12 @@ private fun yamlNode(
     if (merge >= 0) throw WorkCorpus.WorkShapeError.YamlReference(referencePlace(segments.take(merge)))
     return when (node) {
         is YamlNull -> Node.Null(place)
-        is YamlScalar -> Node.Scalar(place, node.content, bare = node.plain, json = false)
+        is YamlScalar ->
+            if (node.plain && node.content in CORE_SCHEMA_NULLS) {
+                Node.Null(place)
+            } else {
+                Node.Scalar(place, node.content, bare = node.plain, json = false)
+            }
         is YamlList -> Node.Sequence(place, node.items.mapIndexed { index, item -> yamlNode(item, "$place[$index]") })
         is YamlMap ->
             Node.Mapping(

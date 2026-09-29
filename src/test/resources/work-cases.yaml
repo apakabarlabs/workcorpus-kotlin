@@ -750,3 +750,36 @@ cases:
     replace: "language: eng\n"
     with: "language: srp\n"
     read: {language: srp}
+  - case: a piece title written as Null is null, as the YAML core schema says
+    fixture: book-with-listening
+    replace: "    title: First poem\n"
+    with: "    title: Null\n"
+    error: nullText
+    refused: "The work's pieces[0].title is null where text belongs; an empty text is written as \"\"."
+  - case: a line written as NULL is null, as the YAML core schema says
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line., NULL]\n"
+    error: nullText
+    refused: "The work's pieces[0].lines[1] is null where text belongs; an empty text is written as \"\"."
+  - case: a free piece written as NULL is refused as not a number
+    fixture: book-with-listening
+    replace: "free: [1]\n"
+    with: "free: [NULL]\n"
+    error: invalidNumber
+    refused: "The work's free[0] is not a whole number that fits in 32 bits."
+  - case: cuts written as Null are read as none
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts: Null\n"
+    read: {cuts: {}}
+  - case: a work file section whose short name is NULL is read as having none
+    fixture: work
+    replace: "    short: The Procreation\n"
+    with: "    short: NULL\n"
+    read: {shortTitles: [The Procreation Sonnets, The Fair Youth]}
+  - case: a title written as 'Null' in quotes is text
+    fixture: book-with-listening
+    replace: "    title: First poem\n"
+    with: "    title: 'Null'\n"
+    read: {titles: ["Null"]}

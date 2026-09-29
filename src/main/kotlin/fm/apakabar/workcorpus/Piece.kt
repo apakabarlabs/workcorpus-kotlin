@@ -6,7 +6,10 @@ import kotlinx.serialization.Serializable
 /**
  * What a reader reads in one sitting: a sonnet, a stanza, a scene.
  *
- * Creating a piece directly does not validate its number or cuts against a work.
+ * Creating or decoding a piece refuses cuts that do not divide its lines: each stage
+ * named in [cutSizes] has to be a reading stage other than [ReadingStage.LINE], and its
+ * sizes have to be positive and add up to exactly the number of lines. The number is
+ * not validated against a work.
  *
  * @property number One-based position of the piece in its work.
  * @property title Reader-facing title.
@@ -21,6 +24,10 @@ data class Piece(
     val lines: List<String>,
     @SerialName("cuts") val cutSizes: Map<String, List<Int>> = emptyMap(),
 ) {
+    init {
+        WorkCorpus.validateCuts(piece = number, lines = lines.size, cutSizes = cutSizes)
+    }
+
     /** Stable identity, equal to the piece number. */
     val id: Int get() = number
 
@@ -41,17 +48,7 @@ data class Piece(
             return lines.indices.map { it..it }
         }
 
-        val ranges = mutableListOf<IntRange>()
         var start = 0
-        for (size in sizes) {
-            val end = minOf(start + size - 1, lines.size - 1)
-            if (start > end) break
-            ranges += start..end
-            start = end + 1
-        }
-        if (start <= lines.size - 1) {
-            ranges += start..(lines.size - 1)
-        }
-        return ranges
+        return sizes.map { size -> (start until start + size).also { start += size } }
     }
 }

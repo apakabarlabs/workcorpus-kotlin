@@ -147,27 +147,24 @@ object WorkCorpus {
         if (work.difficultWords.scoreThreshold <= 0) throw WorkShapeError.InvalidDifficultWordThreshold()
 
         if (work.language.isBlank()) throw WorkShapeError.UnnamedLanguage()
-
-        work.pieces.forEach(::validateCuts)
     }
 
-    private fun validateCuts(piece: Piece) {
-        for ((label, sizes) in piece.cutSizes.toSortedMap()) {
+    internal fun validateCuts(
+        piece: Int,
+        lines: Int,
+        cutSizes: Map<String, List<Int>>,
+    ) {
+        for ((label, sizes) in cutSizes.toSortedMap()) {
             val stage =
                 ReadingStage.entries.firstOrNull { it.label == label }
-                    ?: throw WorkShapeError.CutsForUnknownStage(piece = piece.number, stage = label)
-            if (stage == ReadingStage.LINE) throw WorkShapeError.CutsForLineStage(piece = piece.number)
+                    ?: throw WorkShapeError.CutsForUnknownStage(piece = piece, stage = label)
+            if (stage == ReadingStage.LINE) throw WorkShapeError.CutsForLineStage(piece = piece)
             sizes.firstOrNull { it <= 0 }?.let { empty ->
-                throw WorkShapeError.EmptyCut(piece = piece.number, stage = label, size = empty)
+                throw WorkShapeError.EmptyCut(piece = piece, stage = label, size = empty)
             }
             val cut = sizes.sumOf { it.toLong() }.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-            if (cut != piece.lines.size) {
-                throw WorkShapeError.CutsDoNotCoverThePiece(
-                    piece = piece.number,
-                    stage = label,
-                    cut = cut,
-                    lines = piece.lines.size,
-                )
+            if (cut != lines) {
+                throw WorkShapeError.CutsDoNotCoverThePiece(piece = piece, stage = label, cut = cut, lines = lines)
             }
         }
     }

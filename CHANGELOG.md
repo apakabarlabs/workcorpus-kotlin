@@ -24,6 +24,12 @@
   there is one. The piece and free-piece identifiers of a work file are held to the
   same writing and the same 32 bits, and one that is not, such as `'+3'`, `'03'`
   or `'-0'`, is refused with `WorkError.PieceIsNotNumbered`.
+- A `Work`, `Piece`, `Part` or `DifficultWordsConfiguration` decoded from JSON with
+  kotlinx.serialization holds its numbers to their value, as the lead's `Decodable`
+  does: a JSON number that is a whole number within 32 bits reads, so `5.0` reads as
+  5, while a string such as `"5"`, a boolean, null, a fraction, a value past 32 bits
+  or `-0` is refused with `WorkShapeError.InvalidNumber`, naming the field. The
+  library depends on `kotlinx-serialization-json` for this.
 - A work file or book that gives a value a YAML anchor, takes one from an alias,
   or merges a mapping in with a `<<` key, quoted or not, is refused with
   `WorkShapeError.YamlReference`, naming the anchored value or the merging

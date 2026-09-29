@@ -1,4 +1,81 @@
+json-book: '{"language": "eng", "pieces": [{"number": 1, "title": "First poem", "lines": ["The first line."]}], "parts": [{"title": "Opening poems", "summary": "The first part.", "first": 1, "last": 1}], "free": [1], "stage_field": {"untouched_below": 0.001, "begun_below": 0.5, "most_below": 1.0}, "difficult_words": {"score_threshold": 3}}'
 cases:
+  - case: a JSON book is read as it is written
+    fixture: json-book
+    threshold: 3
+  - case: a JSON threshold written as 5.0 is the whole number 5
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": 5.0'
+    threshold: 5
+  - case: a JSON threshold written as 1e2 is the whole number 100
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": 1e2'
+    threshold: 100
+  - case: a JSON piece number written as 1.0 is piece 1
+    fixture: json-book
+    replace: '"number": 1'
+    with: '"number": 1.0'
+  - case: a JSON threshold of 5.5 is refused
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": 5.5'
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON threshold of 1e400 is refused
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": 1e400'
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON threshold past 32 bits is refused
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": 2147483648'
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON threshold given as the string "5" is refused
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": "5"'
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON threshold given as true is refused
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": true'
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON threshold given as null is refused
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": null'
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON threshold given as a list is refused
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": [5]'
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON number written as -0 is refused
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": -0'
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON number written as -0.0 is refused
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": -0.0'
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON free piece given as the string "1" is refused, naming the entry
+    fixture: json-book
+    replace: '"free": [1]'
+    with: '"free": ["1"]'
+    refused: "The work's free[0] is not a whole number that fits in 32 bits."
+  - case: a JSON cut of 1.5 is refused, naming the piece's cut
+    fixture: json-book
+    replace: '"lines": ["The first line."]'
+    with: '"lines": ["The first line."], "cuts": {"block": [1.5]}'
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a JSON part bound written as 1.0 is read
+    fixture: json-book
+    replace: '"last": 1'
+    with: '"last": 1.0'
   - case: a cut written as -0 is refused
     fixture: book-with-listening
     replace: "    lines: [The first line.]\n"

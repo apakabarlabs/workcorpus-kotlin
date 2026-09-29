@@ -6,6 +6,7 @@ import com.charleskorn.kaml.YamlScalar
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
@@ -17,6 +18,7 @@ import kotlinx.serialization.descriptors.SerialKind
 import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
 
 /**
  * What a reader reads in one sitting: a sonnet, a stanza, a scene.
@@ -32,10 +34,12 @@ import kotlinx.serialization.encoding.Encoder
  * @property cutSizes Per-stage sizes of consecutive line groups, keyed by [ReadingStage.label].
  * A work that names no cuts, or names them as null, decodes with an empty table.
  * @throws WorkCorpus.WorkShapeError naming the piece and the stage when the cuts do not
- * divide the lines, or naming the field when a number decoded from YAML is not an
- * integer within 32 bits.
+ * divide the lines, or naming the field when a number decoded from YAML or JSON is not
+ * an integer within 32 bits.
  */
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = PieceSerializer::class)
 data class Piece(
     @Serializable(with = WholeNumberSerializer::class)
     val number: Int,
@@ -74,12 +78,20 @@ data class Piece(
     }
 }
 
+@OptIn(ExperimentalSerializationApi::class)
+internal object PieceSerializer : NumberCheckedSerializer<Piece>(Piece.generatedSerializer())
+
 internal object WholeNumberSerializer : KSerializer<Int> {
     @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
     override val descriptor: SerialDescriptor =
         buildSerialDescriptor("fm.apakabar.workcorpus.WholeNumber", SerialKind.CONTEXTUAL)
 
     override fun deserialize(decoder: Decoder): Int {
+        if (decoder is JsonDecoder) {
+            return checkNotNull(wholeNumber(decoder.decodeJsonElement())) {
+                "A JSON number reached the work unchecked by the serializer of the type holding it."
+            }
+        }
         if (decoder !is YamlInput) return decoder.decodeInt()
         val place = place(decoder.node.path.segments)
         val scalar = decoder.node as? YamlScalar

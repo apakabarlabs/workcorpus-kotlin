@@ -1,5 +1,7 @@
 package fm.apakabar.workcorpus
 
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -16,6 +18,10 @@ import kotlinx.serialization.Serializable
  * prefixes and sexagesimal `1:30` are refused, so that every port reads a number the
  * same way.
  *
+ * Decoded from JSON, a number is a JSON number whose value is a whole number that fits
+ * in 32 bits, so `5` and `5.0` both read as 5. A string such as `"5"`, a boolean, null,
+ * a fraction, a value past 32 bits and `-0` are refused as in YAML.
+ *
  * A work is written out in full. A YAML anchor, an alias or a `<<` merge key, quoted or
  * not, is refused with [WorkCorpus.WorkShapeError.YamlReference], since YAML readers do
  * not resolve them alike.
@@ -29,7 +35,9 @@ import kotlinx.serialization.Serializable
  * @property stageField Thresholds used to display stage progress.
  * @property difficultWords Threshold used to identify difficult words.
  */
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = WorkSerializer::class)
 @ConsistentCopyVisibility
 data class Work internal constructor(
     val language: String,
@@ -43,6 +51,9 @@ data class Work internal constructor(
     @SerialName("difficult_words") val difficultWords: DifficultWordsConfiguration,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
+internal object WorkSerializer : NumberCheckedSerializer<Work>(Work.generatedSerializer())
+
 /**
  * Configuration for classifying repeatedly missed words.
  *
@@ -50,9 +61,15 @@ data class Work internal constructor(
  *
  * @property scoreThreshold Minimum accumulated score at which a word is difficult.
  */
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = DifficultWordsConfigurationSerializer::class)
 data class DifficultWordsConfiguration(
     @SerialName("score_threshold")
     @Serializable(with = WholeNumberSerializer::class)
     val scoreThreshold: Int,
 )
+
+@OptIn(ExperimentalSerializationApi::class)
+internal object DifficultWordsConfigurationSerializer :
+    NumberCheckedSerializer<DifficultWordsConfiguration>(DifficultWordsConfiguration.generatedSerializer())

@@ -1,5 +1,7 @@
 package fm.apakabar.workcorpus
 
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
 
 /**
@@ -13,9 +15,11 @@ import kotlinx.serialization.Serializable
  * @property last Number of the last piece in the part.
  * @throws WorkCorpus.WorkShapeError.PartOutOfRange when the part does not start at piece
  * one or later, or ends before it starts; [WorkCorpus.WorkShapeError.InvalidNumber] when
- * a bound decoded from YAML is not an integer within 32 bits.
+ * a bound decoded from YAML or JSON is not an integer within 32 bits.
  */
-@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = PartSerializer::class)
 data class Part(
     val title: String,
     val summary: String,
@@ -41,3 +45,6 @@ data class Part(
     /** Reports whether a numbered piece belongs to the part. */
     fun contains(piece: Int): Boolean = piece in pieces
 }
+
+@OptIn(ExperimentalSerializationApi::class)
+internal object PartSerializer : NumberCheckedSerializer<Part>(Part.generatedSerializer())

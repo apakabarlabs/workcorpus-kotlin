@@ -15,8 +15,8 @@ This is a Kotlin/JVM port of [workcorpus-swift](https://github.com/apakabarlabs/
 with its behaviour and, where the languages allow, its names. One difference is
 deliberate: where the lead lets Swift's own `DecodingError` report a document
 that is not YAML, a missing field or a value of the wrong kind, this port reports
-it as `WorkCorpus.DocumentError`, so that no error of its YAML or JSON parser
-reaches a caller. The cases every port is held to live in the lead's
+it as `WorkCorpus.DocumentError`, so that no error of its YAML parser reaches a
+caller. The cases every port is held to live in the lead's
 `work-cases.yaml`; they are synced from there with `make sync-yaml`, and a test
 holds the copies against that repository, so the ports cannot quietly drift
 apart.
@@ -100,8 +100,11 @@ that says what is wrong and where:
   bound not written as above (`InvalidFraction`);
 - a text the work needs left null (`NullText`), where YAML null is `null`,
   `Null`, `NULL`, `~` or nothing, and empty text is written `""`;
-- a YAML anchor, alias or `<<` merge key (`YamlReference`), or a key named twice
-  in one mapping (`RepeatedKey`, naming the key repeated first);
+- a YAML anchor, alias or `<<` merge key (`YamlReference`), an explicit YAML tag
+  such as `!!str 3` (`ExplicitTag`), or a key named twice in one mapping
+  (`RepeatedKey`); of several of these, the one first in the document, and of
+  several keys repeated on one line, as a flow mapping can, the first written,
+  where the lead names the first in code-point order;
 - pieces not numbered from one in order (`OutOfOrder`), parts that do not cover
   the work exactly once or run past it, free pieces that are empty, repeated or
   outside the work, stage field bounds out of order, a threshold below one, a
@@ -109,13 +112,14 @@ that says what is wrong and where:
   of their piece (`WorkShapeError`).
 
 `WorkCorpus.work` holds values a caller already has to the rules of the last
-item. `Work.serializer()` and the serializers of `Piece`, `Part`,
-`StageFieldScale` and `DifficultWordsConfiguration` read a value from kaml or
-from kotlinx.serialization JSON by the same rules for numbers, fractions and
-texts, but only `decodeWork` and `decodeWorkFromBook` parse the YAML
-themselves: decoding through a `Yaml` of the caller's leaves anchors, aliases
-and repeated keys to that `Yaml`'s configuration and errors, and neither way
-checks relationships between the fields.
+item. `Work.serializer()` also reads a work from JSON with kotlinx.serialization,
+holding its numbers, fractions and texts to the rules above, as the shared cases
+test with the default `Json`; it checks no relationships between the fields, a
+JSON syntax error reaches the caller as kotlinx.serialization's own error, and a
+key repeated in one JSON object is not refused, the value kept possibly differing
+from the lead's. The YAML rules hold only through `decodeWork` and
+`decodeWorkFromBook`. Keys equal only under Unicode canonical equivalence count
+as one key in the lead and as two here, a rare difference no case pins.
 
 ## Install
 

@@ -19,8 +19,13 @@ import kotlinx.serialization.encoding.encodeStructure
  * @property first Number of the first piece in the part.
  * @property last Number of the last piece in the part.
  * @throws WorkCorpus.WorkShapeError.PartOutOfRange when the part does not start at piece
- * one or later, or ends before it starts; [WorkCorpus.WorkShapeError.InvalidNumber] when
- * a bound decoded from YAML or JSON is not an integer within 32 bits.
+ * one or later, or ends before it starts.
+ * @throws WorkCorpus.WorkShapeError.InvalidNumber naming the field when a bound decoded from
+ * YAML or JSON is not a whole number within 32 bits.
+ * @throws WorkCorpus.WorkShapeError.NullText naming the field when a decoded title or summary
+ * is null; a null `short` is read as none.
+ * @throws WorkCorpus.DocumentError when a decoded part misses a field or a field holds another
+ * kind of value than it names.
  */
 @Serializable(with = Part.Serializer::class)
 data class Part(

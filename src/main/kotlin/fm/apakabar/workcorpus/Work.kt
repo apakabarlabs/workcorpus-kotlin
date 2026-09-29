@@ -14,11 +14,12 @@ import kotlinx.serialization.encoding.encodeStructure
  * A reading work and the configuration used to present it.
  *
  * Decode through [WorkCorpus.decodeWork] or [WorkCorpus.decodeWorkFromBook] to validate
- * the complete work before use. Decoding this type directly with [serializer], from YAML
- * through kaml or from JSON through kotlinx.serialization, reads its numbers, fractions
- * and texts by the rules below, but does not validate relationships between its fields,
- * and leaves YAML anchors, aliases and repeated keys to the caller's `Yaml`: only
- * `decodeWork` and `decodeWorkFromBook` parse the YAML themselves and refuse them.
+ * the complete work before use: they parse the YAML themselves, so they alone refuse the
+ * YAML problems below. [serializer] also reads a work from JSON with kotlinx.serialization,
+ * holding its numbers, fractions and texts to the rules below, as the shared cases test with
+ * the default `Json`, but it does not validate relationships between the fields. A syntax
+ * error in the JSON reaches the caller as kotlinx.serialization's own error, raised before
+ * the library sees the document.
  *
  * Every number a work carries, from piece numbers to cut sizes, is a YAML integer that
  * fits in 32 bits, written as plain decimal digits: `0`, or digits that do not start
@@ -41,7 +42,9 @@ import kotlinx.serialization.encoding.encodeStructure
  *
  * A work is written out in full. A YAML anchor, an alias or a `<<` merge key, quoted or
  * not, is refused with [WorkCorpus.WorkShapeError.YamlReference], since YAML readers do
- * not resolve them alike.
+ * not resolve them alike; an explicit YAML tag with [WorkCorpus.WorkShapeError.ExplicitTag];
+ * a key named twice in one mapping with [WorkCorpus.WorkShapeError.RepeatedKey]. Of several
+ * such problems, the one first in the document is reported.
  *
  * @property language Language the work is written in, as the work names it: a language
  * tag such as `en`, `eng` or `en-GB`. It arrives with the work rather than being
@@ -51,6 +54,12 @@ import kotlinx.serialization.encoding.encodeStructure
  * @property free Piece numbers intended to be available without purchase.
  * @property stageField Thresholds used to display stage progress.
  * @property difficultWords Threshold used to identify difficult words.
+ * @throws WorkCorpus.WorkShapeError.InvalidNumber, WorkCorpus.WorkShapeError.InvalidFraction
+ * or WorkCorpus.WorkShapeError.NullText naming the field, when decoded, as [Piece], [Part],
+ * [StageFieldScale] and [DifficultWordsConfiguration] throw them, and any of their shape
+ * errors.
+ * @throws WorkCorpus.DocumentError when a decoded work misses a field or a field holds another
+ * kind of value than it names.
  */
 @Serializable(with = WorkSerializer::class)
 @ConsistentCopyVisibility
@@ -99,6 +108,10 @@ internal object WorkSerializer : KSerializer<Work> {
  * Creating a configuration directly does not validate it against a work.
  *
  * @property scoreThreshold Minimum accumulated score at which a word is difficult.
+ * @throws WorkCorpus.WorkShapeError.InvalidNumber naming the field when a decoded threshold
+ * is not a whole number within 32 bits.
+ * @throws WorkCorpus.DocumentError when a decoded configuration misses its threshold or is not
+ * a mapping.
  */
 @Serializable(with = DifficultWordsConfigurationSerializer::class)
 data class DifficultWordsConfiguration(

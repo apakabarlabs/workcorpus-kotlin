@@ -24,9 +24,16 @@ import kotlinx.serialization.encoding.encodeStructure
  * @property lines Printed lines in reading order.
  * @property cutSizes Per-stage sizes of consecutive line groups, keyed by [ReadingStage.label].
  * A work that names no cuts, or names them as null, decodes with an empty table.
- * @throws WorkCorpus.WorkShapeError naming the piece and the stage when the cuts do not
- * divide the lines, or naming the field when a number decoded from YAML or JSON is not
- * an integer within 32 bits.
+ * @throws WorkCorpus.WorkShapeError.CutsForUnknownStage,
+ * WorkCorpus.WorkShapeError.CutsForLineStage, WorkCorpus.WorkShapeError.EmptyCut or
+ * WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece naming the piece and the stage when the
+ * cuts do not divide the lines, the stages judged in code-point order of their names.
+ * @throws WorkCorpus.WorkShapeError.InvalidNumber naming the field when the number or a cut
+ * size decoded from YAML or JSON is not a whole number within 32 bits.
+ * @throws WorkCorpus.WorkShapeError.NullText naming the field when a decoded title or line
+ * is null.
+ * @throws WorkCorpus.DocumentError when a decoded piece misses a field or a field holds
+ * another kind of value than it names.
  */
 @Serializable(with = PieceSerializer::class)
 data class Piece(

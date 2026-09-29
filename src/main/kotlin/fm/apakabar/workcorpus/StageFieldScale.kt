@@ -17,6 +17,10 @@ import kotlinx.serialization.encoding.encodeStructure
  * @property untouchedBelow Upper bound of the untouched band.
  * @property begunBelow Upper bound of the begun band.
  * @property mostBelow Upper bound of the mostly-complete band.
+ * @throws WorkCorpus.WorkShapeError.InvalidFraction naming the bound when one decoded from YAML
+ * is not written in plain decimal digits, or one decoded from JSON is not a number a `Double`
+ * holds with fewer than 38 significant digits.
+ * @throws WorkCorpus.DocumentError when a decoded scale misses a bound or is not a mapping.
  */
 @Serializable(with = StageFieldScaleSerializer::class)
 data class StageFieldScale(

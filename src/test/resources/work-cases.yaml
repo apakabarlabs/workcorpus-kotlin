@@ -98,3 +98,13 @@ cases:
     replace: "  - number: 1\n"
     with: "  - number: 0\n"
     refused: "Expected piece 1, found 0."
+  - case: a work without pieces has no piece to be free, so its free list is refused
+    fixture: book-with-listening
+    replace: "pieces:\n  - number: 1\n    title: First poem\n    lines: [The first line.]\nparts:\n  - title: Opening poems\n    summary: The first part.\n    first: 1\n    last: 1\n"
+    with: "pieces: []\nparts: []\n"
+    refused: "The list of pieces free to read is empty, repeated, or outside the work."
+  - case: a work without pieces and without free pieces is refused for the empty list
+    fixture: book-with-listening
+    replace: "pieces:\n  - number: 1\n    title: First poem\n    lines: [The first line.]\nparts:\n  - title: Opening poems\n    summary: The first part.\n    first: 1\n    last: 1\nfree: [1]\n"
+    with: "pieces: []\nparts: []\nfree: []\n"
+    refused: "The list of pieces free to read is empty, repeated, or outside the work."

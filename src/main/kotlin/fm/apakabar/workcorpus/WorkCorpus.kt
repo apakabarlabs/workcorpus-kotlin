@@ -186,7 +186,7 @@ object WorkCorpus {
         if (next != work.pieces.size + 1) throw WorkShapeError.PartsDoNotCoverTheWork()
 
         val free = work.free.toSet()
-        val numbered = 1..maxOf(work.pieces.size, 1)
+        val numbered = 1..work.pieces.size
         if (free.isEmpty() || free.size != work.free.size || !free.all { it in numbered }) {
             throw WorkShapeError.InvalidFreePieces()
         }

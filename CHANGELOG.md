@@ -16,10 +16,9 @@
   by line.
 - Every number a work carries is a YAML integer that fits in 32 bits, written as
   plain decimal digits with an optional `-` and no leading zero, and read as an
-  `Int`. A larger value, a quoted string, a float, a boolean, or a number written
-  with `+`, a leading zero, as `-0`, with underscores, `0x`/`0o`/`0b` or as
-  sexagesimal `1:30` is
-  refused with `WorkShapeError.InvalidNumber`, naming the field, such as
+  `Int`. A larger value, a quoted string, a float, a boolean, null, a list or a
+  mapping in place of the number, or a number written with `+`, a leading zero, as
+  `-0`, with underscores, `0x`/`0o`/`0b` or as sexagesimal `1:30` is refused with `WorkShapeError.InvalidNumber`, naming the field, such as
   `pieces[0].cuts.block[1]`, and keeping the parser's own error as its cause when
   there is one.
 - `PieceAsset` compares a stem and a file name in Unicode normalization form C and

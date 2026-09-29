@@ -24,3 +24,38 @@ cases:
     replace: "  score_threshold: 3\n"
     with: "  score_threshold: -3\n"
     refused: "The difficult-word score threshold must be positive."
+  - case: a cut size written as a list is refused rather than read as its item
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [[1]]\n"
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a piece number written as a mapping is refused
+    fixture: book-with-listening
+    replace: "  - number: 1\n"
+    with: "  - number: {value: 1}\n"
+    refused: "The work's pieces[0].number is not a whole number that fits in 32 bits."
+  - case: a part bound written as a list is refused
+    fixture: book-with-listening
+    replace: "    last: 1\n"
+    with: "    last: [1]\n"
+    refused: "The work's parts[0].last is not a whole number that fits in 32 bits."
+  - case: a free piece written as null is refused
+    fixture: book-with-listening
+    replace: "free: [1]\n"
+    with: "free: [null]\n"
+    refused: "The work's free[0] is not a whole number that fits in 32 bits."
+  - case: a threshold left empty is refused
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold:\n"
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a work file threshold written as a mapping is refused
+    fixture: work
+    replace: "  difficult_word_score: 3\n"
+    with: "  difficult_word_score: {score: 3}\n"
+    refused: "The work's reading.difficult_word_score is not a whole number that fits in 32 bits."
+  - case: a work file cut size written as a list is refused
+    fixture: work
+    replace: "            - 2\n"
+    with: "            - [2]\n"
+    refused: "The work's sections[0].pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."

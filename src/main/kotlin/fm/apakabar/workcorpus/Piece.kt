@@ -5,6 +5,8 @@ import com.charleskorn.kaml.YamlInput
 import com.charleskorn.kaml.YamlPath
 import com.charleskorn.kaml.YamlPathSegment
 import com.charleskorn.kaml.YamlScalar
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -12,9 +14,9 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.SerialKind
+import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
@@ -75,7 +77,9 @@ data class Piece(
 }
 
 internal object WholeNumberSerializer : KSerializer<Int> {
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("fm.apakabar.workcorpus.WholeNumber", PrimitiveKind.INT)
+    @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
+    override val descriptor: SerialDescriptor =
+        buildSerialDescriptor("fm.apakabar.workcorpus.WholeNumber", SerialKind.CONTEXTUAL)
 
     override fun deserialize(decoder: Decoder): Int {
         if (decoder !is YamlInput) return decoder.decodeInt()

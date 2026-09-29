@@ -58,8 +58,9 @@ object WorkCorpus {
 
         /**
          * A field that holds a number holds something else: a quoted string, a float, a
-         * boolean, an integer that does not fit in 32 bits, or one not written as plain
-         * decimal digits. The parser's own error, when there is one, is kept as the cause.
+         * boolean, null, a list or a mapping, an integer that does not fit in 32 bits, or
+         * one not written as plain decimal digits. The parser's own error, when there is
+         * one, is kept as the cause.
          */
         data class InvalidNumber(
             val place: String,

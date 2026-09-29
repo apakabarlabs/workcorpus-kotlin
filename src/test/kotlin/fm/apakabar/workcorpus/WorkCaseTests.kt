@@ -7,6 +7,7 @@ import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 
 @Serializable
@@ -15,8 +16,9 @@ data class WorkCase(
     @SerialName("fixture") val source: String,
     val replace: String? = null,
     val with: String? = null,
+    val error: String? = null,
     val refused: String? = null,
-    val threshold: Int? = null,
+    val read: WorkReadingCase? = null,
 ) {
     fun document(): String {
         val base = if (source == "json-book") WorkCases.shared().jsonBook else Fixtures.text(source)
@@ -42,6 +44,30 @@ data class WorkCase(
 }
 
 @Serializable
+data class WorkReadingCase(
+    val numbers: List<Int>? = null,
+    val titles: List<String>? = null,
+    val lines: List<String>? = null,
+    val parts: List<List<Int>>? = null,
+    val free: List<Int>? = null,
+    val bands: List<Double>? = null,
+    val threshold: Int? = null,
+) {
+    fun check(work: Work) {
+        numbers?.let { assertEquals(it, work.pieces.map { piece -> piece.number }) }
+        titles?.let { assertEquals(it, work.pieces.map { piece -> piece.title }) }
+        lines?.let { assertEquals(it, work.pieces.firstOrNull()?.lines) }
+        parts?.let { assertEquals(it, work.parts.map { part -> listOf(part.first, part.last) }) }
+        free?.let { assertEquals(it, work.free) }
+        bands?.let {
+            val scale = work.stageField
+            assertEquals(it, listOf(scale.untouchedBelow, scale.begunBelow, scale.mostBelow))
+        }
+        threshold?.let { assertEquals(it, work.difficultWords.scoreThreshold) }
+    }
+}
+
+@Serializable
 data class WorkCases(
     @SerialName("json-book") val jsonBook: String,
     val cases: List<WorkCase>,
@@ -56,19 +82,29 @@ class WorkCaseTests {
     fun `a work is read, or refused, as the shared cases say`(): List<DynamicTest> =
         WorkCases.shared().cases.map { shared ->
             DynamicTest.dynamicTest(shared.name) {
+                assertEquals(shared.refused == null, shared.error == null, "a refusal names its error")
+                assertNotEquals(shared.refused == null, shared.read == null, "a case is read or refused")
                 val document = shared.document()
                 val work =
                     try {
                         shared.read(document)
                     } catch (refusal: WorkCorpus.WorkShapeError) {
-                        return@dynamicTest assertEquals(shared.refused, refusal.message)
+                        return@dynamicTest expect(refusal, shared)
                     } catch (refusal: WorkCorpus.CorpusError) {
-                        return@dynamicTest assertEquals(shared.refused, refusal.message)
+                        return@dynamicTest expect(refusal, shared)
                     } catch (refusal: WorkCorpus.WorkError) {
-                        return@dynamicTest assertEquals(shared.refused, refusal.message)
+                        return@dynamicTest expect(refusal, shared)
                     }
                 assertNull(shared.refused, "read, though the case expects: ${shared.refused}")
-                shared.threshold?.let { assertEquals(it, work.difficultWords.scoreThreshold) }
+                shared.read?.check(work)
             }
         }
+
+    private fun expect(
+        refusal: Exception,
+        shared: WorkCase,
+    ) {
+        assertEquals(shared.error, refusal.javaClass.simpleName.replaceFirstChar { it.lowercase() })
+        assertEquals(shared.refused, refusal.message)
+    }
 }

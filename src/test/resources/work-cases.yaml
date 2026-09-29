@@ -2,221 +2,263 @@ json-book: '{"language": "eng", "pieces": [{"number": 1, "title": "First poem", 
 cases:
   - case: a JSON book is read as it is written
     fixture: json-book
-    threshold: 3
+    read: {numbers: [1], titles: [First poem], lines: [The first line.], parts: [[1, 1]], free: [1], bands: [0.001, 0.5, 1.0], threshold: 3}
   - case: a JSON threshold written as 5.0 is the whole number 5
     fixture: json-book
     replace: '"score_threshold": 3'
     with: '"score_threshold": 5.0'
-    threshold: 5
+    read: {threshold: 5}
   - case: a JSON threshold written as 1e2 is the whole number 100
     fixture: json-book
     replace: '"score_threshold": 3'
     with: '"score_threshold": 1e2'
-    threshold: 100
+    read: {threshold: 100}
   - case: a JSON piece number written as 1.0 is piece 1
     fixture: json-book
     replace: '"number": 1'
     with: '"number": 1.0'
+    read: {numbers: [1]}
+  - case: a JSON part bound written as 1.0 is read
+    fixture: json-book
+    replace: '"last": 1'
+    with: '"last": 1.0'
+    read: {parts: [[1, 1]]}
   - case: a JSON threshold of 5.5 is refused
     fixture: json-book
     replace: '"score_threshold": 3'
     with: '"score_threshold": 5.5'
+    error: invalidNumber
     refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
   - case: a JSON threshold of 1e400 is refused
     fixture: json-book
     replace: '"score_threshold": 3'
     with: '"score_threshold": 1e400'
+    error: invalidNumber
     refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
   - case: a JSON threshold past 32 bits is refused
     fixture: json-book
     replace: '"score_threshold": 3'
     with: '"score_threshold": 2147483648'
+    error: invalidNumber
     refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
   - case: a JSON threshold given as the string "5" is refused
     fixture: json-book
     replace: '"score_threshold": 3'
     with: '"score_threshold": "5"'
+    error: invalidNumber
     refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
   - case: a JSON threshold given as true is refused
     fixture: json-book
     replace: '"score_threshold": 3'
     with: '"score_threshold": true'
+    error: invalidNumber
     refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
   - case: a JSON threshold given as null is refused
     fixture: json-book
     replace: '"score_threshold": 3'
     with: '"score_threshold": null'
+    error: invalidNumber
     refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
   - case: a JSON threshold given as a list is refused
     fixture: json-book
     replace: '"score_threshold": 3'
     with: '"score_threshold": [5]'
+    error: invalidNumber
     refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
   - case: a JSON number written as -0 is refused
     fixture: json-book
     replace: '"score_threshold": 3'
     with: '"score_threshold": -0'
+    error: invalidNumber
     refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
   - case: a JSON number written as -0.0 is refused
     fixture: json-book
     replace: '"score_threshold": 3'
     with: '"score_threshold": -0.0'
+    error: invalidNumber
     refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
   - case: a JSON free piece given as the string "1" is refused, naming the entry
     fixture: json-book
     replace: '"free": [1]'
     with: '"free": ["1"]'
+    error: invalidNumber
     refused: "The work's free[0] is not a whole number that fits in 32 bits."
   - case: a JSON cut of 1.5 is refused, naming the piece's cut
     fixture: json-book
     replace: '"lines": ["The first line."]'
     with: '"lines": ["The first line."], "cuts": {"block": [1.5]}'
+    error: invalidNumber
     refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
-  - case: a JSON part bound written as 1.0 is read
-    fixture: json-book
-    replace: '"last": 1'
-    with: '"last": 1.0'
   - case: a cut written as -0 is refused
     fixture: book-with-listening
     replace: "    lines: [The first line.]\n"
     with: "    lines: [The first line.]\n    cuts:\n      block: [-0]\n"
+    error: invalidNumber
     refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
   - case: a threshold written as -0 is refused
     fixture: book-with-listening
     replace: "  score_threshold: 3\n"
     with: "  score_threshold: -0\n"
+    error: invalidNumber
     refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
   - case: a part bound written as -0 is refused
     fixture: book-with-listening
     replace: "    first: 1\n"
     with: "    first: -0\n"
+    error: invalidNumber
     refused: "The work's parts[0].first is not a whole number that fits in 32 bits."
   - case: a threshold written as 0 is the number zero
     fixture: book-with-listening
     replace: "  score_threshold: 3\n"
     with: "  score_threshold: 0\n"
+    error: invalidDifficultWordThreshold
     refused: "The difficult-word score threshold must be positive."
   - case: a negative threshold is a number, refused only for being below one
     fixture: book-with-listening
     replace: "  score_threshold: 3\n"
     with: "  score_threshold: -3\n"
+    error: invalidDifficultWordThreshold
     refused: "The difficult-word score threshold must be positive."
   - case: a cut size written as a list is refused rather than read as its item
     fixture: book-with-listening
     replace: "    lines: [The first line.]\n"
     with: "    lines: [The first line.]\n    cuts:\n      block: [[1]]\n"
+    error: invalidNumber
     refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
   - case: a piece number written as a mapping is refused
     fixture: book-with-listening
     replace: "  - number: 1\n"
     with: "  - number: {value: 1}\n"
+    error: invalidNumber
     refused: "The work's pieces[0].number is not a whole number that fits in 32 bits."
   - case: a part bound written as a list is refused
     fixture: book-with-listening
     replace: "    last: 1\n"
     with: "    last: [1]\n"
+    error: invalidNumber
     refused: "The work's parts[0].last is not a whole number that fits in 32 bits."
   - case: a free piece written as null is refused
     fixture: book-with-listening
     replace: "free: [1]\n"
     with: "free: [null]\n"
+    error: invalidNumber
     refused: "The work's free[0] is not a whole number that fits in 32 bits."
   - case: a threshold left empty is refused
     fixture: book-with-listening
     replace: "  score_threshold: 3\n"
     with: "  score_threshold:\n"
+    error: invalidNumber
     refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
   - case: a work file threshold written as a mapping is refused
     fixture: work
     replace: "  difficult_word_score: 3\n"
     with: "  difficult_word_score: {score: 3}\n"
+    error: invalidNumber
     refused: "The work's reading.difficult_word_score is not a whole number that fits in 32 bits."
   - case: a work file cut size written as a list is refused
     fixture: work
     replace: "            - 2\n"
     with: "            - [2]\n"
+    error: invalidNumber
     refused: "The work's sections[0].pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
   - case: a piece identifier written with + is refused
     fixture: work
     replace: "id: '3'"
     with: "id: '+3'"
+    error: pieceIsNotNumbered
     refused: "The work calls a piece +3, which is not a number."
   - case: a piece identifier written with a leading zero is refused
     fixture: work
     replace: "id: '3'"
     with: "id: '03'"
+    error: pieceIsNotNumbered
     refused: "The work calls a piece 03, which is not a number."
   - case: a piece identifier written as -0 is refused
     fixture: work
     replace: "id: '3'"
     with: "id: '-0'"
+    error: pieceIsNotNumbered
     refused: "The work calls a piece -0, which is not a number."
   - case: a piece identifier with a space around it is refused
     fixture: work
     replace: "id: '3'"
     with: "id: ' 3'"
+    error: pieceIsNotNumbered
     refused: "The work calls a piece  3, which is not a number."
   - case: a free piece written with + is refused
     fixture: work
     replace: "    - '1'\n"
     with: "    - '+1'\n"
+    error: pieceIsNotNumbered
     refused: "The work calls a piece +1, which is not a number."
   - case: a piece identifier written as a bare integer is read
     fixture: work
     replace: "id: '3'"
     with: "id: 3"
+    read: {numbers: [1, 2, 3], titles: [Sonnet 1, Sonnet 2, Sonnet 3], parts: [[1, 2], [3, 3]], free: [1, 2], threshold: 3}
   - case: a piece identified as 0 is refused as out of order, not as a part out of range
     fixture: work
     replace: "id: '1'"
     with: "id: '0'"
+    error: outOfOrder
     refused: "Expected piece 1, found 0."
   - case: a book piece numbered 0 is refused as out of order
     fixture: book-with-listening
     replace: "  - number: 1\n"
     with: "  - number: 0\n"
+    error: outOfOrder
     refused: "Expected piece 1, found 0."
   - case: a work without pieces has no piece to be free, so its free list is refused
     fixture: book-with-listening
     replace: "pieces:\n  - number: 1\n    title: First poem\n    lines: [The first line.]\nparts:\n  - title: Opening poems\n    summary: The first part.\n    first: 1\n    last: 1\n"
     with: "pieces: []\nparts: []\n"
+    error: invalidFreePieces
     refused: "The list of pieces free to read is empty, repeated, or outside the work."
   - case: a work without pieces and without free pieces is refused for the empty list
     fixture: book-with-listening
     replace: "pieces:\n  - number: 1\n    title: First poem\n    lines: [The first line.]\nparts:\n  - title: Opening poems\n    summary: The first part.\n    first: 1\n    last: 1\nfree: [1]\n"
     with: "pieces: []\nparts: []\nfree: []\n"
+    error: invalidFreePieces
     refused: "The list of pieces free to read is empty, repeated, or outside the work."
   - case: an anchor on a piece title is refused, naming the field
     fixture: book-with-listening
     replace: "    title: First poem\n"
     with: "    title: &poem First poem\n"
+    error: yamlReference
     refused: "The work's pieces[0].title is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
   - case: a number taken from an alias is refused at its anchor
     fixture: book-with-listening
     replace: "    first: 1\n    last: 1\n"
     with: "    first: &one 1\n    last: *one\n"
+    error: yamlReference
     refused: "The work's parts[0].first is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
   - case: an anchor on a mapping is refused, naming the mapping
     fixture: book-with-listening
     replace: "difficult_words:\n"
     with: "difficult_words: &words\n"
+    error: yamlReference
     refused: "The work's difficult_words is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
   - case: a merge key in a part is refused, naming the part
     fixture: book-with-listening
     replace: "  - title: Opening poems\n"
     with: "  - <<: {short: Opening}\n    title: Opening poems\n"
+    error: yamlReference
     refused: "The work's parts[0] is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
   - case: an anchor in a work file is refused, naming the field
     fixture: work
     replace: "reading:\n"
     with: "reading: &reading\n"
+    error: yamlReference
     refused: "The work's reading is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
   - case: a merge key in a work file section is refused, naming the section
     fixture: work
     replace: "  - title: The Fair Youth\n"
     with: "  - <<: {short: Fair}\n    title: The Fair Youth\n"
+    error: yamlReference
     refused: "The work's sections[1] is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
   - case: a << key in quotes is refused as a merge key too
     fixture: book-with-listening
     replace: "  - title: Opening poems\n"
     with: "  - '<<': {short: Opening}\n    title: Opening poems\n"
+    error: yamlReference
     refused: "The work's parts[0] is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."

@@ -20,7 +20,7 @@ version =
     ) { "CHANGELOG.md has no released version heading" }.groupValues[1]
 
 dependencies {
-    implementation("io.heapy.kotaml:kotaml:0.110.0")
+    implementation("io.heapy.kotaml:kotaml:0.111.0")
     implementation("it.krzeminski:snakeyaml-engine-kmp:4.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 

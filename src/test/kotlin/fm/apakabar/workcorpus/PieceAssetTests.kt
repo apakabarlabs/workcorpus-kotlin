@@ -20,6 +20,14 @@ class PieceAssetTests {
     }
 
     @Test
+    fun `the stem is written as it is, even where it looks like a format`() {
+        val percent = PieceAsset(stem = "100%d-%@")
+
+        assertEquals("100%d-%@-004", percent.name(4))
+        assertEquals(4, percent.number(inName = "100%d-%@-004.mp3"))
+    }
+
+    @Test
     fun `a number is read from a bare name, never from a path`() {
         assertEquals(4, asset.number(inName = "sonnet-004.mp3"))
         assertEquals(4, asset.number(inName = "sonnet-004"))

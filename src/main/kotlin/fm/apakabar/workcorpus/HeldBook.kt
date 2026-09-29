@@ -47,10 +47,12 @@ private data class OpenPart(
 )
 
 internal fun assemble(
+    language: String,
     pieces: List<HeldPiece>,
     reading: HeldReading,
 ): Work =
     Work(
+        language = language,
         pieces = pieces.map { Piece(number = it.number, title = it.title, lines = it.lines, cutSizes = it.cutSizes) },
         parts =
             assembleParts(pieces).map {

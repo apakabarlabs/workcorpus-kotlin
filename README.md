@@ -44,10 +44,12 @@ val firstBlock = piece.cuts(ReadingStage.BLOCK)[0]
 ```
 
 `decodeWork` reads the nested work file, `decodeWorkFromBook` the assembled book,
-and `WorkCorpus.work(pieces, reading)` assembles values a caller already holds.
-All three refuse a work whose pieces are not numbered from one in order, whose
-parts do not cover it exactly once, or whose reading thresholds do not make
-sense, and say which.
+and `WorkCorpus.work(language, pieces, reading)` assembles values a caller
+already holds. `Work.language` is the language the work names itself as written
+in; nothing here assumes one. All three refuse a work whose pieces are not
+numbered from one in order, whose parts do not cover it exactly once, whose
+reading thresholds do not make sense, which names no language, or whose cuts do
+not fit its pieces, and say which.
 
 ## Install
 
@@ -59,7 +61,7 @@ repositories {
 }
 
 dependencies {
-    implementation("fm.apakabar:workcorpus-kotlin:0.4.0")
+    implementation("fm.apakabar:workcorpus-kotlin:0.5.0")
 }
 ```
 

@@ -18,6 +18,7 @@ class ReadmeTests {
         val file =
             """
             slug: poems
+            language: eng
             title: Poems
             reading:
               untouched_below: 0.001
@@ -37,6 +38,7 @@ class ReadmeTests {
             """.trimIndent()
         val book =
             """
+            language: eng
             pieces:
               - number: 1
                 title: First poem

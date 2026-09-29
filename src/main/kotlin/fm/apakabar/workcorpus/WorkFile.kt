@@ -10,6 +10,7 @@ internal val workYaml = Yaml(configuration = YamlConfiguration(strictMode = fals
 @Serializable
 internal data class WorkFile(
     val slug: String,
+    val language: String,
     val title: String,
     val reading: WorkReading,
     val sections: List<WorkSection>,
@@ -58,6 +59,7 @@ internal fun assembleWork(yaml: String): Work {
             }
         }
     return assemble(
+        language = work.language,
         pieces = pieces,
         reading =
             HeldReading(

@@ -51,6 +51,38 @@ class WorkFileTests {
         assertEquals(3, read.difficultWords.scoreThreshold)
     }
 
+    @Test
+    fun `the language comes off the work file as the work names it`() {
+        assertEquals("eng", WorkCorpus.decodeWork(Fixtures.work()).language)
+
+        val serbian = Fixtures.work().replace("language: eng\n", "language: srp\n")
+        assertEquals("srp", WorkCorpus.decodeWork(serbian).language)
+    }
+
+    @Test
+    fun `a work file that does not name its language is refused, and says so`() {
+        val unnamed = Fixtures.work().replace("language: eng\n", "")
+
+        assertNotEquals(Fixtures.work(), unnamed)
+        val error = assertFailsWith<Exception> { WorkCorpus.decodeWork(unnamed) }
+        assertTrue("language" in error.message.orEmpty(), error.message)
+    }
+
+    @Test
+    fun `a work file whose cuts overrun a piece is refused`() {
+        val overrun =
+            Fixtures.work().replace(
+                "          block:\n            - 2\n",
+                "          block:\n            - 3\n",
+            )
+
+        assertNotEquals(Fixtures.work(), overrun)
+        assertEquals(
+            WorkCorpus.WorkShapeError.CutsOverrunThePiece(piece = 1, stage = "block", cut = 3, lines = 2),
+            assertFailsWith<WorkCorpus.WorkShapeError.CutsOverrunThePiece> { WorkCorpus.decodeWork(overrun) },
+        )
+    }
+
     @ParameterizedTest
     @ValueSource(strings = ["0.2", "0", "200"])
     fun `a work file that still names a shortest attempt is read, whatever it says`(seconds: String) {

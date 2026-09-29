@@ -37,6 +37,32 @@ object WorkCorpus {
         class InvalidStageFieldScale : WorkShapeError("The stage field bounds are not increasing values between zero and one.")
 
         class InvalidDifficultWordThreshold : WorkShapeError("The difficult-word score threshold must be positive.")
+
+        class UnnamedLanguage : WorkShapeError("The work does not name the language it is written in.")
+
+        data class CutsForUnknownStage(
+            val piece: Int,
+            val stage: String,
+        ) : WorkShapeError("Piece $piece is cut for a stage called $stage, which is not a reading stage.")
+
+        data class CutsForLineStage(
+            val piece: Int,
+        ) : WorkShapeError("Piece $piece is cut for the line stage, which is read one line at a time.")
+
+        data class EmptyCut(
+            val piece: Int,
+            val stage: String,
+            val size: Int,
+        ) : WorkShapeError("Piece $piece has a $stage cut of $size lines; a cut holds at least one.")
+
+        data class CutsOverrunThePiece(
+            val piece: Int,
+            val stage: String,
+            val cut: Int,
+            val lines: Int,
+        ) : WorkShapeError("Piece $piece is cut at the $stage stage into $cut lines, but it has $lines.")
+
+        final override fun toString(): String = "${javaClass.name}: $message"
     }
 
     /**
@@ -79,12 +105,16 @@ object WorkCorpus {
     /**
      * Assembles held values into a work and validates its complete shape.
      *
+     * @param language The language the work names itself as written in.
+     * @param pieces The pieces in reading order, each with the part it is filed under.
+     * @param reading What a reading of the work is held to.
      * @throws CorpusError.OutOfOrder when the pieces are not numbered from one in order.
      */
     fun work(
+        language: String,
         pieces: List<HeldPiece>,
         reading: HeldReading,
-    ): Work = validated(assemble(pieces, reading))
+    ): Work = validated(assemble(language, pieces, reading))
 
     private fun validated(work: Work): Work {
         validate(work.pieces)
@@ -115,5 +145,30 @@ object WorkCorpus {
         if (!increasing) throw WorkShapeError.InvalidStageFieldScale()
 
         if (work.difficultWords.scoreThreshold <= 0) throw WorkShapeError.InvalidDifficultWordThreshold()
+
+        if (work.language.isBlank()) throw WorkShapeError.UnnamedLanguage()
+
+        work.pieces.forEach(::validateCuts)
+    }
+
+    private fun validateCuts(piece: Piece) {
+        for ((label, sizes) in piece.cutSizes.toSortedMap()) {
+            val stage =
+                ReadingStage.entries.firstOrNull { it.label == label }
+                    ?: throw WorkShapeError.CutsForUnknownStage(piece = piece.number, stage = label)
+            if (stage == ReadingStage.LINE) throw WorkShapeError.CutsForLineStage(piece = piece.number)
+            sizes.firstOrNull { it <= 0 }?.let { empty ->
+                throw WorkShapeError.EmptyCut(piece = piece.number, stage = label, size = empty)
+            }
+            val cut = sizes.sumOf { it.toLong() }.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            if (cut > piece.lines.size) {
+                throw WorkShapeError.CutsOverrunThePiece(
+                    piece = piece.number,
+                    stage = label,
+                    cut = cut,
+                    lines = piece.lines.size,
+                )
+            }
+        }
     }
 }

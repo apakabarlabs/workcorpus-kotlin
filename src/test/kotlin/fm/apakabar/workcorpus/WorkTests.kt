@@ -5,6 +5,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class WorkTests {
@@ -67,16 +68,108 @@ class WorkTests {
         }
     }
 
+    @Test
+    fun `a book carries the language it names`() {
+        val book = Fixtures.text("book-with-listening")
+
+        assertEquals("eng", WorkCorpus.decodeWorkFromBook(book).language)
+    }
+
+    @Test
+    fun `a book that does not name its language is refused, and says so`() {
+        val book = Fixtures.text("book-with-listening").replace("language: eng\n", "")
+
+        assertNotEquals(Fixtures.text("book-with-listening"), book)
+        val error = assertFailsWith<Exception> { WorkCorpus.decodeWorkFromBook(book) }
+        assertTrue("language" in error.message.orEmpty(), error.message)
+    }
+
+    @Test
+    fun `a work has to name its language`() {
+        assertFailsWith<WorkCorpus.WorkShapeError.UnnamedLanguage> {
+            WorkCorpus.validateConfiguration(work(language = ""))
+        }
+    }
+
+    @Test
+    fun `cuts that cover part of a piece leave the rest as one more cut`() {
+        WorkCorpus.validateConfiguration(work(cuts = mapOf("block" to listOf(4, 4))))
+    }
+
+    @Test
+    fun `a cut of no lines is refused, naming the piece and the stage`() {
+        assertEquals(
+            WorkCorpus.WorkShapeError.EmptyCut(piece = 1, stage = "block", size = 0),
+            assertFailsWith<WorkCorpus.WorkShapeError.EmptyCut> {
+                WorkCorpus.validateConfiguration(work(cuts = mapOf("block" to listOf(4, 0, 4))))
+            },
+        )
+        assertEquals(
+            WorkCorpus.WorkShapeError.EmptyCut(piece = 1, stage = "block", size = -2),
+            assertFailsWith<WorkCorpus.WorkShapeError.EmptyCut> {
+                WorkCorpus.validateConfiguration(work(cuts = mapOf("block" to listOf(-2, 16))))
+            },
+        )
+    }
+
+    @Test
+    fun `cuts longer than the piece are refused rather than cut short`() {
+        assertEquals(
+            WorkCorpus.WorkShapeError.CutsOverrunThePiece(piece = 1, stage = "block", cut = 16, lines = 14),
+            assertFailsWith<WorkCorpus.WorkShapeError.CutsOverrunThePiece> {
+                WorkCorpus.validateConfiguration(work(cuts = mapOf("block" to listOf(4, 4, 4, 4))))
+            },
+        )
+        assertEquals(
+            WorkCorpus.WorkShapeError.CutsOverrunThePiece(piece = 1, stage = "block", cut = Int.MAX_VALUE, lines = 14),
+            assertFailsWith<WorkCorpus.WorkShapeError.CutsOverrunThePiece> {
+                WorkCorpus.validateConfiguration(work(cuts = mapOf("block" to listOf(Int.MAX_VALUE, 1))))
+            },
+        )
+    }
+
+    @Test
+    fun `cuts for a stage there is no such thing as are refused rather than ignored`() {
+        assertEquals(
+            WorkCorpus.WorkShapeError.CutsForUnknownStage(piece = 1, stage = "stanza"),
+            assertFailsWith<WorkCorpus.WorkShapeError.CutsForUnknownStage> {
+                WorkCorpus.validateConfiguration(work(cuts = mapOf("stanza" to listOf(7, 7))))
+            },
+        )
+    }
+
+    @Test
+    fun `cuts for the line stage are refused, since that stage is never cut`() {
+        assertEquals(
+            WorkCorpus.WorkShapeError.CutsForLineStage(piece = 1),
+            assertFailsWith<WorkCorpus.WorkShapeError.CutsForLineStage> {
+                WorkCorpus.validateConfiguration(work(cuts = mapOf("line" to listOf(2, 2))))
+            },
+        )
+    }
+
+    @Test
+    fun `what is wrong with a cut is said in words that name the piece and the stage`() {
+        val error = WorkCorpus.WorkShapeError.CutsOverrunThePiece(piece = 99, stage = "block", cut = 16, lines = 15)
+
+        assertEquals("Piece 99 is cut at the block stage into 16 lines, but it has 15.", error.message)
+    }
+
     private fun work(
+        language: String = "eng",
         threshold: Int = 3,
         parts: List<Part>? = null,
         free: List<Int> = listOf(1),
+        cuts: Map<String, List<Int>> = emptyMap(),
     ): Work {
+        val first = Piece(number = 1, title = "Piece 1", lines = List(14) { "A line of verse," }, cutSizes = cuts)
         val pieces =
-            (1..20).map { number ->
-                Piece(number = number, title = "Piece $number", lines = listOf("A line of verse,"))
-            }
+            listOf(first) +
+                (2..20).map { number ->
+                    Piece(number = number, title = "Piece $number", lines = listOf("A line of verse,"))
+                }
         return Work(
+            language = language,
             pieces = pieces,
             parts = parts ?: listOf(Part(title = "The work", summary = "", first = 1, last = pieces.size)),
             free = free,

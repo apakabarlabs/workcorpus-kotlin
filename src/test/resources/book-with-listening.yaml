@@ -1,0 +1,18 @@
+pieces:
+  - number: 1
+    title: First poem
+    lines: [The first line.]
+parts:
+  - title: Opening poems
+    summary: The first part.
+    first: 1
+    last: 1
+free: [1]
+stage_field:
+  untouched_below: 0.001
+  begun_below: 0.5
+  most_below: 1.0
+difficult_words:
+  score_threshold: 3
+listening:
+  shortest_attempt_seconds: 0.2

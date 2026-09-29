@@ -1,0 +1,35 @@
+slug: shakespeare-sonnets
+language: eng
+title: Shakespeare's Sonnets
+reading:
+  untouched_below: 0.001
+  begun_below: 0.5
+  most_below: 1.0
+  difficult_word_score: 3
+  free:
+    - '1'
+    - '2'
+sections:
+  - title: The Procreation Sonnets
+    short: The Procreation
+    summary: Marry, and let your beauty outlive you.
+    pieces:
+      - id: '1'
+        title: Sonnet 1
+        lines:
+          - From fairest creatures we desire increase,
+          - That thereby beauty’s rose might never die,
+        cuts:
+          block:
+            - 2
+      - id: '2'
+        title: Sonnet 2
+        lines:
+          - When forty winters shall besiege thy brow,
+  - title: The Fair Youth
+    summary: The poet writes to the young man.
+    pieces:
+      - id: '3'
+        title: Sonnet 3
+        lines:
+          - Look in thy glass and tell the face thou viewest

@@ -78,8 +78,23 @@ class WorkFileTests {
 
         assertNotEquals(Fixtures.work(), overrun)
         assertEquals(
-            WorkCorpus.WorkShapeError.CutsOverrunThePiece(piece = 1, stage = "block", cut = 3, lines = 2),
-            assertFailsWith<WorkCorpus.WorkShapeError.CutsOverrunThePiece> { WorkCorpus.decodeWork(overrun) },
+            WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = 3, lines = 2),
+            assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> { WorkCorpus.decodeWork(overrun) },
+        )
+    }
+
+    @Test
+    fun `a work file whose cuts fall short of a piece is refused`() {
+        val short =
+            Fixtures.work().replace(
+                "          block:\n            - 2\n",
+                "          block:\n            - 1\n",
+            )
+
+        assertNotEquals(Fixtures.work(), short)
+        assertEquals(
+            WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = 1, lines = 2),
+            assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> { WorkCorpus.decodeWork(short) },
         )
     }
 

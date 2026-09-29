@@ -55,7 +55,7 @@ object WorkCorpus {
             val size: Int,
         ) : WorkShapeError("Piece $piece has a $stage cut of $size lines; a cut holds at least one.")
 
-        data class CutsOverrunThePiece(
+        data class CutsDoNotCoverThePiece(
             val piece: Int,
             val stage: String,
             val cut: Int,
@@ -161,8 +161,8 @@ object WorkCorpus {
                 throw WorkShapeError.EmptyCut(piece = piece.number, stage = label, size = empty)
             }
             val cut = sizes.sumOf { it.toLong() }.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-            if (cut > piece.lines.size) {
-                throw WorkShapeError.CutsOverrunThePiece(
+            if (cut != piece.lines.size) {
+                throw WorkShapeError.CutsDoNotCoverThePiece(
                     piece = piece.number,
                     stage = label,
                     cut = cut,

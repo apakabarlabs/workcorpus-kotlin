@@ -92,8 +92,32 @@ class WorkTests {
     }
 
     @Test
-    fun `cuts that cover part of a piece leave the rest as one more cut`() {
-        WorkCorpus.validateConfiguration(work(cuts = mapOf("block" to listOf(4, 4))))
+    fun `cuts that cover the piece exactly are accepted`() {
+        WorkCorpus.validateConfiguration(work(cuts = mapOf("block" to listOf(4, 4, 4, 2))))
+    }
+
+    @Test
+    fun `cuts shorter than the piece are refused rather than given a cut of the rest`() {
+        assertEquals(
+            WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = 8, lines = 14),
+            assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> {
+                WorkCorpus.validateConfiguration(work(cuts = mapOf("block" to listOf(4, 4))))
+            },
+        )
+        assertEquals(
+            WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = 0, lines = 14),
+            assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> {
+                WorkCorpus.validateConfiguration(work(cuts = mapOf("block" to emptyList())))
+            },
+        )
+    }
+
+    @Test
+    fun `a stage the work says nothing about is accepted, and read line by line`() {
+        val work = work()
+
+        WorkCorpus.validateConfiguration(work)
+        assertEquals(14, work.pieces[0].cuts(ReadingStage.BLOCK).size)
     }
 
     @Test
@@ -115,14 +139,14 @@ class WorkTests {
     @Test
     fun `cuts longer than the piece are refused rather than cut short`() {
         assertEquals(
-            WorkCorpus.WorkShapeError.CutsOverrunThePiece(piece = 1, stage = "block", cut = 16, lines = 14),
-            assertFailsWith<WorkCorpus.WorkShapeError.CutsOverrunThePiece> {
+            WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = 16, lines = 14),
+            assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> {
                 WorkCorpus.validateConfiguration(work(cuts = mapOf("block" to listOf(4, 4, 4, 4))))
             },
         )
         assertEquals(
-            WorkCorpus.WorkShapeError.CutsOverrunThePiece(piece = 1, stage = "block", cut = Int.MAX_VALUE, lines = 14),
-            assertFailsWith<WorkCorpus.WorkShapeError.CutsOverrunThePiece> {
+            WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = Int.MAX_VALUE, lines = 14),
+            assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> {
                 WorkCorpus.validateConfiguration(work(cuts = mapOf("block" to listOf(Int.MAX_VALUE, 1))))
             },
         )
@@ -150,7 +174,7 @@ class WorkTests {
 
     @Test
     fun `what is wrong with a cut is said in words that name the piece and the stage`() {
-        val error = WorkCorpus.WorkShapeError.CutsOverrunThePiece(piece = 99, stage = "block", cut = 16, lines = 15)
+        val error = WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 99, stage = "block", cut = 16, lines = 15)
 
         assertEquals("Piece 99 is cut at the block stage into 16 lines, but it has 15.", error.message)
     }

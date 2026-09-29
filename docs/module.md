@@ -6,9 +6,11 @@ and assets a reading application needs.
 Use `WorkCorpus.decodeWork` for the nested work-file format or
 `WorkCorpus.decodeWorkFromBook` for the assembled book format. Both validate
 numbering, parts, free pieces, progress thresholds, the language the work names
-and the cuts each piece is taken in before returning a `Work`. A cut of no lines,
-cuts longer than their piece, and cuts for a stage that is not a cut reading stage
-are refused with the piece and the stage named. `WorkCorpus.work` assembles a work
+and the cuts each piece is taken in before returning a `Work`. The cuts of a stage
+have to add up to exactly the lines of their piece: a cut of no lines, cuts longer
+or shorter than their piece, and cuts for a stage that is not a cut reading stage
+are refused with the piece and the stage named. A stage the work says nothing
+about is read line by line. `WorkCorpus.work` assembles a work
 from its language and the `HeldPiece` and `HeldReading` values a caller already
 holds, and validates it the same way.
 

@@ -2,6 +2,7 @@ package fm.apakabar.workcorpus
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class ReadingStageTests {
@@ -66,10 +67,31 @@ class ReadingStageTests {
     }
 
     @Test
-    fun `lines past the last cut are not dropped`() {
+    fun `a work whose cuts leave lines past the last cut is refused, naming piece and stage`() {
+        val short =
+            HeldPiece(
+                number = 1,
+                title = "Piece 1",
+                lines = (1..14).map { "line $it" },
+                partTitle = "The work",
+                partShort = null,
+                partSummary = "",
+                cutSizes = mapOf("block" to listOf(4, 4)),
+            )
+        val reading =
+            HeldReading(
+                untouchedBelow = 0.001,
+                begunBelow = 0.5,
+                mostBelow = 1.0,
+                difficultWordScore = 3,
+                free = listOf(1),
+            )
+
         assertEquals(
-            listOf(4, 4, 6),
-            piece(1, lines = 14, cuts = mapOf("block" to listOf(4, 4))).cuts(ReadingStage.BLOCK).map { it.count() },
+            WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = 8, lines = 14),
+            assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> {
+                WorkCorpus.work(language = "eng", pieces = listOf(short), reading = reading)
+            },
         )
     }
 

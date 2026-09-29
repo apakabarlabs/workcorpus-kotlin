@@ -22,11 +22,14 @@ Follows [workcorpus-swift](https://github.com/apakabarlabs/workcorpus-swift) 0.5
   WorkCorpus.work(language, pieces, reading)
   ```
 - An assembled book needs a `language` key; one without it no longer decodes.
-- A work's `cuts` table is validated. A cut of zero or fewer lines, cuts whose
-  sizes add up to more lines than the piece has, cuts for a stage that does not
-  exist, and cuts for the `line` stage are refused, naming the piece and the
-  stage. Cuts that add up to fewer lines than the piece has are still accepted,
-  and the lines after them are read as one more cut.
+- A work's `cuts` table is validated. The sizes a stage is cut into have to add
+  up to exactly the lines of the piece. A cut of zero or fewer lines, sizes that
+  add up to more or fewer lines than the piece has, cuts for a stage that does
+  not exist, and cuts for the `line` stage are refused, naming the piece and the
+  stage. Until now sizes past the end of the piece were cut short, a shortfall
+  was made up with one more cut of the remaining lines, and cuts for an unknown
+  or the `line` stage were ignored. A stage the work says nothing about is still
+  read line by line.
 
 ## 0.4.0
 

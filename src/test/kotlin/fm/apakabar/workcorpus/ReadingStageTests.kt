@@ -7,9 +7,9 @@ import kotlin.test.assertTrue
 
 class ReadingStageTests {
     private fun piece(
-        number: Int,
+        number: Long,
         lines: Int,
-        cuts: Map<String, List<Int>> = emptyMap(),
+        cuts: Map<String, List<Long>> = emptyMap(),
     ): Piece =
         Piece(
             number = number,

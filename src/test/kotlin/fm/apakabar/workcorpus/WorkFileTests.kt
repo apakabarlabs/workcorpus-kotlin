@@ -13,7 +13,7 @@ class WorkFileTests {
     fun `the pieces come out of the work file numbered and in order`() {
         val read = assembleWork(Fixtures.work())
 
-        assertEquals(listOf(1, 2, 3), read.pieces.map { it.number })
+        assertEquals(listOf(1L, 2L, 3L), read.pieces.map { it.number })
         assertEquals(listOf("When forty winters shall besiege thy brow,"), read.pieces[1].lines)
     }
 
@@ -38,7 +38,7 @@ class WorkFileTests {
 
         assertEquals(listOf("The Procreation Sonnets", "The Fair Youth"), read.parts.map { it.title })
         assertEquals("The Procreation", read.parts[0].shortTitle)
-        assertEquals(1..2, read.parts[0].pieces)
+        assertEquals(1L..2L, read.parts[0].pieces)
         assertEquals("The Fair Youth", read.parts[1].shortTitle)
     }
 
@@ -46,7 +46,7 @@ class WorkFileTests {
     fun `the reading thresholds come off the reading block`() {
         val read = assembleWork(Fixtures.work())
 
-        assertEquals(listOf(1, 2), read.free)
+        assertEquals(listOf(1L, 2L), read.free)
         assertEquals(StageFieldScale.Band.UNTOUCHED, read.stageField.band(0.0005))
         assertEquals(3, read.difficultWords.scoreThreshold)
     }
@@ -96,6 +96,33 @@ class WorkFileTests {
             WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = 1, lines = 2),
             assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> { WorkCorpus.decodeWork(short) },
         )
+    }
+
+    @Test
+    fun `a work file whose cut is too large to count is refused naming piece and stage`() {
+        val huge =
+            Fixtures.work().replace(
+                "          block:\n            - 2\n",
+                "          block:\n            - -99999999999999999999\n",
+            )
+
+        assertNotEquals(Fixtures.work(), huge)
+        assertEquals(
+            WorkCorpus.WorkShapeError.EmptyCut(piece = 1, stage = "block", size = Long.MIN_VALUE),
+            assertFailsWith<WorkCorpus.WorkShapeError.EmptyCut> { WorkCorpus.decodeWork(huge) },
+        )
+    }
+
+    @Test
+    fun `a work file piece whose cuts are null is read as having none`() {
+        val none =
+            Fixtures.work().replace(
+                "        cuts:\n          block:\n            - 2\n",
+                "        cuts: null\n",
+            )
+
+        assertNotEquals(Fixtures.work(), none)
+        assertEquals(emptyMap(), WorkCorpus.decodeWork(none).pieces[0].cutSizes)
     }
 
     @ParameterizedTest

@@ -11,33 +11,51 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
 class FixtureCopyTests {
-    private fun fetch(name: String): ByteArray {
-        val address = "$LEAD/$name"
+    private val tag = "v${checkNotNull(System.getProperty("workcorpus.version")) { "the build passes no version" }}"
+
+    private fun fetch(address: String): ByteArray {
         val request =
             HttpRequest
                 .newBuilder(URI.create(address))
                 .timeout(Duration.ofSeconds(TIMEOUT_SECONDS))
                 .build()
         val answer = CLIENT.send(request, HttpResponse.BodyHandlers.ofByteArray())
-        assertEquals(OK, answer.statusCode(), "$address answered ${answer.statusCode()}")
+        assertEquals(
+            OK,
+            answer.statusCode(),
+            "$address answered ${answer.statusCode()}: if workcorpus-swift has no $tag yet, push the lead and tag it $tag",
+        )
         return answer.body()
     }
 
+    private fun leadFixtures(): Set<String> {
+        val listing = fetch("$LISTING?ref=$tag").decodeToString()
+        return Regex("\"name\"\\s*:\\s*\"([^\"]+)\"").findAll(listing).map { it.groupValues[1] }.toSet()
+    }
+
     @TestFactory
-    fun `every shared fixture is the leading port's own, byte for byte`(): List<DynamicTest> =
-        Fixtures.shared.map { name ->
-            DynamicTest.dynamicTest(name) {
-                assertContentEquals(
-                    fetch(name),
-                    Fixtures.bytes(name),
-                    "$name differs from the leading port: run `make sync-yaml`",
-                )
+    fun `every fixture is the leading port's own at the tag of this version, byte for byte`(): List<DynamicTest> {
+        val lead = leadFixtures()
+        val set =
+            DynamicTest.dynamicTest("the copied fixtures are the ones $tag has") {
+                assertEquals(lead, Fixtures.copied(), "the fixtures differ from workcorpus-swift $tag: run `make sync-yaml`")
             }
-        }
+        return listOf(set) +
+            lead.sorted().map { name ->
+                DynamicTest.dynamicTest(name) {
+                    assertContentEquals(
+                        fetch("$RAW/$tag/$DIRECTORY/$name"),
+                        Fixtures.bytes(name),
+                        "$name differs from workcorpus-swift $tag: run `make sync-yaml`",
+                    )
+                }
+            }
+    }
 
     companion object {
-        private const val LEAD =
-            "https://raw.githubusercontent.com/apakabarlabs/workcorpus-swift/main/Tests/WorkCorpusTests/Fixtures"
+        private const val DIRECTORY = "Tests/WorkCorpusTests/Fixtures"
+        private const val RAW = "https://raw.githubusercontent.com/apakabarlabs/workcorpus-swift"
+        private const val LISTING = "https://api.github.com/repos/apakabarlabs/workcorpus-swift/contents/$DIRECTORY"
         private const val OK = 200
         private const val TIMEOUT_SECONDS = 10L
         private val CLIENT: HttpClient = HttpClient.newHttpClient()

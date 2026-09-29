@@ -46,7 +46,7 @@ class HeldBookTests {
     fun `the pieces come out numbered and in the order they are held`() {
         val work = assemble("eng", pieces, reading)
 
-        assertEquals(listOf(1, 2, 3), work.pieces.map { it.number })
+        assertEquals(listOf(1L, 2L, 3L), work.pieces.map { it.number })
         assertEquals(listOf("When forty winters shall besiege thy brow,"), work.pieces[1].lines)
         assertEquals("Sonnet 2", work.pieces[1].title)
     }
@@ -57,16 +57,16 @@ class HeldBookTests {
 
         assertEquals(listOf("The Procreation Sonnets", "The Fair Youth"), work.parts.map { it.title })
         assertEquals("The Procreation", work.parts[0].shortTitle)
-        assertEquals(1..2, work.parts[0].pieces)
+        assertEquals(1L..2L, work.parts[0].pieces)
         assertEquals("The Fair Youth", work.parts[1].shortTitle)
-        assertEquals(3..3, work.parts[1].pieces)
+        assertEquals(3L..3L, work.parts[1].pieces)
     }
 
     @Test
     fun `the reading thresholds come off the reading it was given`() {
         val work = assemble("eng", pieces, reading)
 
-        assertEquals(listOf(1, 2), work.free)
+        assertEquals(listOf(1L, 2L), work.free)
         assertEquals(StageFieldScale.Band.UNTOUCHED, work.stageField.band(0.0005))
         assertEquals(3, work.difficultWords.scoreThreshold)
     }
@@ -86,7 +86,7 @@ class HeldBookTests {
 
         val work = assemble("eng", returning, reading)
 
-        assertEquals(listOf(1..2, 3..3, 4..4), work.parts.map { it.pieces })
+        assertEquals(listOf(1L..2L, 3L..3L, 4L..4L), work.parts.map { it.pieces })
     }
 
     @Test
@@ -106,8 +106,11 @@ class HeldBookTests {
 
     @Test
     fun `a work held without naming its language is refused`() {
-        assertFailsWith<WorkCorpus.WorkShapeError.UnnamedLanguage> {
-            WorkCorpus.work(language = " ", pieces = pieces, reading = reading)
-        }
+        assertEquals(
+            WorkCorpus.WorkShapeError.InvalidLanguage(" "),
+            assertFailsWith<WorkCorpus.WorkShapeError.InvalidLanguage> {
+                WorkCorpus.work(language = " ", pieces = pieces, reading = reading)
+            },
+        )
     }
 }

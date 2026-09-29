@@ -5,12 +5,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class PieceTests {
-    private fun piece(cuts: Map<String, List<Int>>): Piece =
+    private fun piece(cuts: Map<String, List<Long>>): Piece =
         Piece(number = 1, title = "Piece 1", lines = List(14) { "A line of verse," }, cutSizes = cuts)
 
     @Test
     fun `cuts that cover the piece exactly are accepted`() {
-        assertEquals(mapOf("block" to listOf(4, 4, 4, 2)), piece(mapOf("block" to listOf(4, 4, 4, 2))).cutSizes)
+        assertEquals(mapOf("block" to listOf(4L, 4L, 4L, 2L)), piece(mapOf("block" to listOf(4, 4, 4, 2))).cutSizes)
     }
 
     @Test
@@ -39,9 +39,9 @@ class PieceTests {
             },
         )
         assertEquals(
-            WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = Int.MAX_VALUE, lines = 14),
+            WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = Long.MAX_VALUE, lines = 14),
             assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> {
-                piece(mapOf("block" to listOf(Int.MAX_VALUE, 1)))
+                piece(mapOf("block" to listOf(Long.MAX_VALUE, 1)))
             },
         )
     }

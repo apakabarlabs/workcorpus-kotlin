@@ -16,19 +16,19 @@ import kotlinx.serialization.Serializable
 data class Part(
     val title: String,
     val summary: String,
-    val first: Int,
-    val last: Int,
+    val first: Long,
+    val last: Long,
     private val short: String? = null,
 ) {
     /** Compact title when one was supplied, otherwise [title]. */
     val shortTitle: String get() = short ?: title
 
     /** Inclusive piece-number range occupied by the part. */
-    val pieces: IntRange get() = first..last
+    val pieces: LongRange get() = first..last
 
     /** Stable identity, equal to the first piece number. */
-    val id: Int get() = first
+    val id: Long get() = first
 
     /** Reports whether a numbered piece belongs to the part. */
-    fun contains(piece: Int): Boolean = piece in pieces
+    fun contains(piece: Long): Boolean = piece in pieces
 }

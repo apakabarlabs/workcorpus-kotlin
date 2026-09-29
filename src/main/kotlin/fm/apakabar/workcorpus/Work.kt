@@ -10,9 +10,9 @@ import kotlinx.serialization.Serializable
  * the complete work before use. Decoding this type directly with [serializer] does not
  * validate relationships between its fields.
  *
- * @property language Language the work is written in, as the work names it. It arrives
- * with the work rather than being assumed, because the same reading mechanics carry
- * works in other languages, each held to its own alphabet.
+ * @property language Language the work is written in, as the work names it: a language
+ * tag such as `en`, `eng` or `en-GB`. It arrives with the work rather than being
+ * assumed, because the same reading mechanics carry works in other languages.
  * @property pieces Reading pieces, expected to be numbered from one and ordered by number.
  * @property parts Parts, expected to cover the pieces consecutively and exactly once.
  * @property free Piece numbers intended to be available without purchase.
@@ -25,7 +25,7 @@ data class Work internal constructor(
     val language: String,
     val pieces: List<Piece>,
     val parts: List<Part>,
-    val free: List<Int>,
+    val free: List<Long>,
     @SerialName("stage_field") val stageField: StageFieldScale,
     @SerialName("difficult_words") val difficultWords: DifficultWordsConfiguration,
 )

@@ -39,7 +39,8 @@ internal data class WorkPiece(
     val id: String,
     val title: String,
     val lines: List<String>,
-    val cuts: Map<String, List<Int>>? = null,
+    @Serializable(with = CutsSerializer::class)
+    val cuts: Map<String, List<Long>> = emptyMap(),
 )
 
 internal fun assembleWork(yaml: String): Work {
@@ -54,7 +55,7 @@ internal fun assembleWork(yaml: String): Work {
                     partTitle = part.title,
                     partShort = part.short,
                     partSummary = part.summary ?: "",
-                    cutSizes = piece.cuts.orEmpty(),
+                    cutSizes = piece.cuts,
                 )
             }
         }
@@ -72,11 +73,11 @@ internal fun assembleWork(yaml: String): Work {
     )
 }
 
-private fun numbered(id: String): Int = id.toStrictIntOrNull() ?: throw WorkCorpus.WorkError.PieceIsNotNumbered(id)
+private fun numbered(id: String): Long = id.toStrictLongOrNull() ?: throw WorkCorpus.WorkError.PieceIsNotNumbered(id)
 
-private fun String.toStrictIntOrNull(): Int? {
+private fun String.toStrictLongOrNull(): Long? {
     val digits = removePrefix("+").removePrefix("-")
-    return if (digits.isNotEmpty() && digits.all { it in '0'..'9' }) toIntOrNull() else null
+    return if (digits.isNotEmpty() && digits.all { it in '0'..'9' }) toLongOrNull() else null
 }
 
 private fun parts(sections: List<WorkSection>): List<WorkSection> =

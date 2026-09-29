@@ -1,9 +1,16 @@
 package fm.apakabar.workcorpus
 
 import org.junit.jupiter.api.Test
+import java.io.File
 import kotlin.test.assertEquals
 
 class ReadmeTests {
+    private fun yamlShownIn(path: String): List<String> =
+        Regex("```yaml\n(.*?)```", RegexOption.DOT_MATCHES_ALL)
+            .findAll(File(path).readText())
+            .map { it.groupValues[1] }
+            .toList()
+
     @Test
     fun `decodeWork reads a work and its first piece is cut the way the work says`() {
         val work = WorkCorpus.decodeWork(Fixtures.work())
@@ -14,49 +21,13 @@ class ReadmeTests {
     }
 
     @Test
-    fun `the formats the reference shows are read`() {
-        val file =
-            """
-            slug: poems
-            language: eng
-            title: Poems
-            reading:
-              untouched_below: 0.001
-              begun_below: 0.5
-              most_below: 1.0
-              difficult_word_score: 3
-              free: ['1']
-            sections:
-              - title: Opening poems
-                summary: The first part.
-                pieces:
-                  - id: '1'
-                    title: First poem
-                    lines: [The first line.]
-                    cuts:
-                      block: [1]
-            """.trimIndent()
-        val book =
-            """
-            language: eng
-            pieces:
-              - number: 1
-                title: First poem
-                lines: [The first line.]
-            parts:
-              - title: Opening poems
-                summary: The first part.
-                first: 1
-                last: 1
-            free: [1]
-            stage_field:
-              untouched_below: 0.001
-              begun_below: 0.5
-              most_below: 1.0
-            difficult_words:
-              score_threshold: 3
-            """.trimIndent()
+    fun `the work file and the book the reference shows are both read, as the same work`() {
+        val shown = yamlShownIn("docs/module.md")
 
-        assertEquals(WorkCorpus.decodeWork(file).pieces.map { it.title }, WorkCorpus.decodeWorkFromBook(book).pieces.map { it.title })
+        assertEquals(2, shown.size, "docs/module.md shows a work file and a book")
+        val file = WorkCorpus.decodeWork(shown[0])
+        val book = WorkCorpus.decodeWorkFromBook(shown[1])
+        assertEquals(file.pieces.map { it.title }, book.pieces.map { it.title })
+        assertEquals(file.language, book.language)
     }
 }

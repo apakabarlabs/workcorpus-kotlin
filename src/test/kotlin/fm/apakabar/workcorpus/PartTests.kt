@@ -26,7 +26,7 @@ class PartTests {
 
     @Test
     fun `a part carries its range and the pieces inside it`() {
-        assertEquals(1..17, parts.first().pieces)
+        assertEquals(1L..17L, parts.first().pieces)
         assertTrue(parts.first().contains(piece = 17))
         assertFalse(parts.first().contains(piece = 18))
     }

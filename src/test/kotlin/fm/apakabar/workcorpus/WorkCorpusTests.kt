@@ -6,7 +6,7 @@ import kotlin.test.assertFailsWith
 
 class WorkCorpusTests {
     private fun pieces(count: Int): List<Piece> =
-        (1..count).map { number ->
+        (1L..count).map { number ->
             Piece(number = number, title = "Piece $number", lines = listOf("A line of verse,"))
         }
 

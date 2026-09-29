@@ -54,4 +54,5 @@ publish-check:
 
 sync-yaml:
 	mkdir -p $(TEST_RESOURCES)
+	rm -f $(TEST_RESOURCES)/*.yaml
 	cp $(SWIFT_DIR)/Tests/WorkCorpusTests/Fixtures/*.yaml $(TEST_RESOURCES)/

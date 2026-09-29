@@ -1,8 +1,8 @@
 package fm.apakabar.workcorpus
 
-object Fixtures {
-    val shared = listOf("book-with-listening.yaml", "work.yaml")
+import java.io.File
 
+object Fixtures {
     fun bytes(name: String): ByteArray =
         checkNotNull(Fixtures::class.java.getResourceAsStream("/$name")) {
             "$name is missing: run `make sync-yaml`"
@@ -11,4 +11,18 @@ object Fixtures {
     fun text(name: String): String = bytes("$name.yaml").decodeToString()
 
     fun work(): String = text("work")
+
+    fun copied(): Set<String> {
+        val directory =
+            File(
+                checkNotNull(Fixtures::class.java.getResource("/work.yaml")) {
+                    "no fixtures: run `make sync-yaml`"
+                }.toURI(),
+            ).parentFile
+        return directory
+            .listFiles { file -> file.isFile && file.name.endsWith(".yaml") }
+            .orEmpty()
+            .map { it.name }
+            .toSet()
+    }
 }

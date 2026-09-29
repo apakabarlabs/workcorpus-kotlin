@@ -12,13 +12,13 @@ package fm.apakabar.workcorpus
  * @property cutSizes Per-stage sizes of consecutive line groups.
  */
 data class HeldPiece(
-    val number: Int,
+    val number: Long,
     val title: String,
     val lines: List<String>,
     val partTitle: String,
     val partShort: String?,
     val partSummary: String,
-    val cutSizes: Map<String, List<Int>> = emptyMap(),
+    val cutSizes: Map<String, List<Long>> = emptyMap(),
 )
 
 /**
@@ -35,15 +35,15 @@ data class HeldReading(
     val begunBelow: Double,
     val mostBelow: Double,
     val difficultWordScore: Int,
-    val free: List<Int>,
+    val free: List<Long>,
 )
 
 private data class OpenPart(
     val title: String,
     val short: String?,
     val summary: String,
-    val first: Int,
-    val last: Int,
+    val first: Long,
+    val last: Long,
 )
 
 internal fun assemble(

@@ -49,13 +49,17 @@ or is built in code with `WorkCorpus.work` from values the app already holds.
     `WorkShapeError.InvalidLanguage`, which names the value.
   - A piece's `block` sizes must each be at least one and add up to exactly the
     piece's number of lines, and cuts for `line` or for a stage the library does
-    not know are refused. The errors, `CutsDoNotCoverThePiece`, `EmptyCut`,
-    `CutsForLineStage` and `CutsForUnknownStage`, name the piece and the stage.
+    not know are refused. The errors, `WorkShapeError.CutsDoNotCoverThePiece`,
+    `WorkShapeError.EmptyCut`, `WorkShapeError.CutsForLineStage` and
+    `WorkShapeError.CutsForUnknownStage`, name the piece and the stage.
     A piece without `cuts`, or with `cuts: null`, is read line by line.
   - A `Part` that starts before piece one or ends before it starts, and a work
     whose last part runs past its last piece, are refused with
     `WorkShapeError.PartOutOfRange`. Pieces not numbered from one in order are
     refused with `CorpusError.OutOfOrder` before their parts are checked.
+  - The `free` list must be non-empty, name no piece twice and name only pieces
+    of the work, or it is refused with `WorkShapeError.InvalidFreePieces`; so a
+    work without pieces is refused too, since none of its pieces can be free.
   - Every whole number in a work — piece numbers, cut sizes, a part's `first`
     and `last`, the `free` pieces and the difficult-word score — must be a YAML
     integer that fits in 32 bits, written as plain decimal digits with an
@@ -119,7 +123,7 @@ or is built in code with `WorkCorpus.work` from values the app already holds.
     kotlinx.serialization's own `SerializationException`.
   - A JSON number is judged by all its digits, so
     `5.00000000000000000000000000000000000001` is refused; the Swift library
-    reads it as 5, because Foundation drops the digits past about 38.
+    reads it as 5, because Foundation first cuts it to its first 38 digits.
   - `!!str` on a quoted value, and `!!str` or `!` on a key, are refused with
     `ExplicitTag`; the Swift library reads them as untagged.
   - Keys that differ only in how their accented letters are composed in Unicode

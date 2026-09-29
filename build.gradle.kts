@@ -28,8 +28,6 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
-    systemProperty("workcorpus.version", version.toString())
-    inputs.property("workcorpus.version", version.toString())
 }
 
 kotlin {

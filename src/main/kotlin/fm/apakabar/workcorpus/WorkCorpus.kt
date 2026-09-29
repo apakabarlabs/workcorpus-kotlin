@@ -103,6 +103,23 @@ object WorkCorpus {
             val lines: Int,
         ) : WorkShapeError("Piece $piece is cut at the $stage stage into $cut lines, but it has $lines.")
 
+        /**
+         * A value is given a YAML anchor, taken from an alias, or merged in with a `<<` key.
+         * YAML readers resolve these differently, so a work writes every value out where it
+         * belongs; the place is the anchored value or the merging mapping. The parser's own
+         * error, when there is one, is kept as the cause.
+         */
+        data class YamlReference(
+            val place: String,
+        ) : WorkShapeError(
+                "The work's $place is written with a YAML anchor, alias or merge key; " +
+                    "a work writes each value out where it belongs.",
+            ) {
+            internal constructor(place: String, cause: Throwable) : this(place) {
+                initCause(cause)
+            }
+        }
+
         final override fun toString(): String = "${javaClass.name}: $message"
     }
 
@@ -135,9 +152,10 @@ object WorkCorpus {
      * is missing or is not text where text belongs.
      * @throws WorkError.PieceIsNotNumbered when a piece or free-piece identifier is not a
      * whole number within 32 bits.
-     * @throws WorkShapeError when a number is not a YAML integer within 32 bits, a piece's
-     * cuts do not divide its lines, or the parts, free pieces, thresholds or language are
-     * not shaped as a work's must be.
+     * @throws WorkShapeError when a number is not a YAML integer within 32 bits, a value is
+     * written with a YAML anchor, alias or merge key, a piece's cuts do not divide its
+     * lines, or the parts, free pieces, thresholds or language are not shaped as a work's
+     * must be.
      * @throws CorpusError.OutOfOrder when the pieces are not numbered from one in order.
      */
     fun decodeWork(yaml: String): Work = validated(assembleWork(yaml))
@@ -147,12 +165,13 @@ object WorkCorpus {
      *
      * @throws com.charleskorn.kaml.YamlException when the document is not YAML, or a field
      * is missing or is not text where text belongs.
-     * @throws WorkShapeError when a number is not a YAML integer within 32 bits, a piece's
-     * cuts do not divide its lines, or the parts, free pieces, thresholds or language are
-     * not shaped as a work's must be.
+     * @throws WorkShapeError when a number is not a YAML integer within 32 bits, a value is
+     * written with a YAML anchor, alias or merge key, a piece's cuts do not divide its
+     * lines, or the parts, free pieces, thresholds or language are not shaped as a work's
+     * must be.
      * @throws CorpusError.OutOfOrder when the pieces are not numbered from one in order.
      */
-    fun decodeWorkFromBook(yaml: String): Work = validated(workYaml.decodeFromString(Work.serializer(), yaml))
+    fun decodeWorkFromBook(yaml: String): Work = validated(decodeYaml(Work.serializer(), yaml))
 
     /**
      * Assembles held values into a work and validates its complete shape.

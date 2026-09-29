@@ -16,6 +16,10 @@ import kotlinx.serialization.Serializable
  * prefixes and sexagesimal `1:30` are refused, so that every port reads a number the
  * same way.
  *
+ * A work is written out in full. A YAML anchor, an alias or a `<<` merge key, quoted or
+ * not, is refused with [WorkCorpus.WorkShapeError.YamlReference], since YAML readers do
+ * not resolve them alike.
+ *
  * @property language Language the work is written in, as the work names it: a language
  * tag such as `en`, `eng` or `en-GB`. It arrives with the work rather than being
  * assumed, because the same reading mechanics carry works in other languages.

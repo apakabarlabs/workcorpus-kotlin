@@ -79,8 +79,9 @@ integer that fits in 32 bits.
 All three refuse a malformed work with an error that says what is wrong and
 where: pieces not numbered from one in order, parts that do not cover the work
 exactly once, reading thresholds out of order, a language that is not a
-language tag, a number that is not a 32-bit integer, or cuts that do not add up
-to the lines of their piece.
+language tag, a number that is not a 32-bit integer, cuts that do not add up
+to the lines of their piece, or a YAML anchor, alias or `<<` merge key in place
+of a value written out in full.
 
 ## Install
 

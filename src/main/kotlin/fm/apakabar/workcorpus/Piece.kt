@@ -2,8 +2,6 @@ package fm.apakabar.workcorpus
 
 import com.charleskorn.kaml.YamlException
 import com.charleskorn.kaml.YamlInput
-import com.charleskorn.kaml.YamlPath
-import com.charleskorn.kaml.YamlPathSegment
 import com.charleskorn.kaml.YamlScalar
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
@@ -83,7 +81,7 @@ internal object WholeNumberSerializer : KSerializer<Int> {
 
     override fun deserialize(decoder: Decoder): Int {
         if (decoder !is YamlInput) return decoder.decodeInt()
-        val place = place(decoder.node.path)
+        val place = place(decoder.node.path.segments)
         val scalar = decoder.node as? YamlScalar
         if (scalar == null || !scalar.plain || !isPlainDecimal(scalar.content)) {
             throw WorkCorpus.WorkShapeError.InvalidNumber(place)
@@ -104,16 +102,6 @@ internal object WholeNumberSerializer : KSerializer<Int> {
         val digits = written.removePrefix("-")
         return digits.isNotEmpty() && digits.all { it in '0'..'9' } && (digits[0] != '0' || written == "0")
     }
-
-    private fun place(path: YamlPath): String =
-        path.segments
-            .joinToString("") { segment ->
-                when (segment) {
-                    is YamlPathSegment.ListEntry -> "[${segment.index}]"
-                    is YamlPathSegment.MapElementKey -> ".${segment.key}"
-                    else -> ""
-                }
-            }.removePrefix(".")
 }
 
 internal object CutsSerializer : KSerializer<Map<String, List<Int>>> {

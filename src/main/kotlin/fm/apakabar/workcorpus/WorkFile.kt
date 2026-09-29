@@ -1,11 +1,60 @@
 package fm.apakabar.workcorpus
 
+import com.charleskorn.kaml.ForbiddenAnchorOrAliasException
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
+import com.charleskorn.kaml.YamlList
+import com.charleskorn.kaml.YamlMap
+import com.charleskorn.kaml.YamlNode
+import com.charleskorn.kaml.YamlPathSegment
+import com.charleskorn.kaml.YamlTaggedNode
+import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 internal val workYaml = Yaml(configuration = YamlConfiguration(strictMode = false))
+
+internal fun <T> decodeYaml(
+    deserializer: DeserializationStrategy<T>,
+    yaml: String,
+): T {
+    val root =
+        try {
+            workYaml.parseToYamlNode(yaml)
+        } catch (reference: ForbiddenAnchorOrAliasException) {
+            throw WorkCorpus.WorkShapeError.YamlReference(referencePlace(reference.path.segments), reference)
+        }
+    refuseMerges(root)
+    return workYaml.decodeFromYamlNode(deserializer, root)
+}
+
+private fun refuseMerges(node: YamlNode) {
+    val segments = node.path.segments
+    val merge = segments.indexOfFirst { it is YamlPathSegment.Merge }
+    if (merge >= 0) throw WorkCorpus.WorkShapeError.YamlReference(referencePlace(segments.take(merge)))
+    when (node) {
+        is YamlMap ->
+            node.entries.forEach { (key, value) ->
+                refuseMerges(key)
+                refuseMerges(value)
+            }
+        is YamlList -> node.items.forEach(::refuseMerges)
+        is YamlTaggedNode -> refuseMerges(node.innerNode)
+        else -> Unit
+    }
+}
+
+private fun referencePlace(segments: List<YamlPathSegment>): String = place(segments).ifEmpty { "top level" }
+
+internal fun place(segments: List<YamlPathSegment>): String =
+    segments
+        .joinToString("") { segment ->
+            when (segment) {
+                is YamlPathSegment.ListEntry -> "[${segment.index}]"
+                is YamlPathSegment.MapElementKey -> ".${segment.key}"
+                else -> ""
+            }
+        }.removePrefix(".")
 
 @Serializable
 internal data class WorkFile(
@@ -46,7 +95,7 @@ internal data class WorkPiece(
 )
 
 internal fun assembleWork(yaml: String): Work {
-    val work = workYaml.decodeFromString(WorkFile.serializer(), yaml)
+    val work = decodeYaml(WorkFile.serializer(), yaml)
     val pieces =
         parts(work.sections).flatMap { part ->
             part.pieces.orEmpty().map { piece ->

@@ -24,6 +24,10 @@
   there is one. The piece and free-piece identifiers of a work file are held to the
   same writing and the same 32 bits, and one that is not, such as `'+3'`, `'03'`
   or `'-0'`, is refused with `WorkError.PieceIsNotNumbered`.
+- A work file or book that gives a value a YAML anchor, takes one from an alias,
+  or merges a mapping in with a `<<` key, quoted or not, is refused with
+  `WorkShapeError.YamlReference`, naming the anchored value or the merging
+  mapping, such as `parts[0]`, as the lead refuses it.
 - `PieceAsset` compares a stem and a file name in Unicode normalization form C and
   reads only the ASCII digits `0` to `9` as the digits of a piece number.
 - The lead's `Piece.passage` and `PieceStanding` are not ported yet. Both are built

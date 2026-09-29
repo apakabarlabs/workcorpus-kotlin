@@ -108,3 +108,38 @@ cases:
     replace: "pieces:\n  - number: 1\n    title: First poem\n    lines: [The first line.]\nparts:\n  - title: Opening poems\n    summary: The first part.\n    first: 1\n    last: 1\nfree: [1]\n"
     with: "pieces: []\nparts: []\nfree: []\n"
     refused: "The list of pieces free to read is empty, repeated, or outside the work."
+  - case: an anchor on a piece title is refused, naming the field
+    fixture: book-with-listening
+    replace: "    title: First poem\n"
+    with: "    title: &poem First poem\n"
+    refused: "The work's pieces[0].title is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
+  - case: a number taken from an alias is refused at its anchor
+    fixture: book-with-listening
+    replace: "    first: 1\n    last: 1\n"
+    with: "    first: &one 1\n    last: *one\n"
+    refused: "The work's parts[0].first is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
+  - case: an anchor on a mapping is refused, naming the mapping
+    fixture: book-with-listening
+    replace: "difficult_words:\n"
+    with: "difficult_words: &words\n"
+    refused: "The work's difficult_words is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
+  - case: a merge key in a part is refused, naming the part
+    fixture: book-with-listening
+    replace: "  - title: Opening poems\n"
+    with: "  - <<: {short: Opening}\n    title: Opening poems\n"
+    refused: "The work's parts[0] is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
+  - case: an anchor in a work file is refused, naming the field
+    fixture: work
+    replace: "reading:\n"
+    with: "reading: &reading\n"
+    refused: "The work's reading is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
+  - case: a merge key in a work file section is refused, naming the section
+    fixture: work
+    replace: "  - title: The Fair Youth\n"
+    with: "  - <<: {short: Fair}\n    title: The Fair Youth\n"
+    refused: "The work's sections[1] is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
+  - case: a << key in quotes is refused as a merge key too
+    fixture: book-with-listening
+    replace: "  - title: Opening poems\n"
+    with: "  - '<<': {short: Opening}\n    title: Opening poems\n"
+    refused: "The work's parts[0] is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."

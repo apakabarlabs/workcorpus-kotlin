@@ -29,6 +29,30 @@ cases:
     with: '"score_threshold": 5.5'
     error: invalidNumber
     refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON threshold a hair above a whole number is refused
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": 5.000000000000000001'
+    error: invalidNumber
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON threshold a hair below a whole number is refused
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": 4.9999999999999999999'
+    error: invalidNumber
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON free piece a hair below one is refused
+    fixture: json-book
+    replace: '"free": [1]'
+    with: '"free": [0.99999999999999999999]'
+    error: invalidNumber
+    refused: "The work's free[0] is not a whole number that fits in 32 bits."
+  - case: a JSON threshold a hair above the largest 32-bit number is refused
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": 2147483647.0000001'
+    error: invalidNumber
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
   - case: a JSON threshold of 1e400 is refused
     fixture: json-book
     replace: '"score_threshold": 3'

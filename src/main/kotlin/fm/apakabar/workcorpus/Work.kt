@@ -15,8 +15,10 @@ import kotlinx.serialization.encoding.encodeStructure
  *
  * Decode through [WorkCorpus.decodeWork] or [WorkCorpus.decodeWorkFromBook] to validate
  * the complete work before use. Decoding this type directly with [serializer], from YAML
- * through kaml or from JSON through kotlinx.serialization, reads it by the same rules
- * but does not validate relationships between its fields.
+ * through kaml or from JSON through kotlinx.serialization, reads its numbers, fractions
+ * and texts by the rules below, but does not validate relationships between its fields,
+ * and leaves YAML anchors, aliases and repeated keys to the caller's `Yaml`: only
+ * `decodeWork` and `decodeWorkFromBook` parse the YAML themselves and refuse them.
  *
  * Every number a work carries, from piece numbers to cut sizes, is a YAML integer that
  * fits in 32 bits, written as plain decimal digits: `0`, or digits that do not start

@@ -12,9 +12,14 @@ reader holds. One reading of that file, in one place, is what keeps the three
 from disagreeing about what is written.
 
 This is a Kotlin/JVM port of [workcorpus-swift](https://github.com/apakabarlabs/workcorpus-swift),
-with the same names and behaviour. The work files its tests read are synced from
-there with `make sync-yaml`, and a test holds the copies against that repository,
-so the ports cannot quietly drift apart.
+with its behaviour and, where the languages allow, its names. One difference is
+deliberate: where the lead lets Swift's own `DecodingError` report a document
+that is not YAML, a missing field or a value of the wrong kind, this port reports
+it as `WorkCorpus.DocumentError`, so that no error of its YAML or JSON parser
+reaches a caller. The cases every port is held to live in the lead's
+`work-cases.yaml`; they are synced from there with `make sync-yaml`, and a test
+holds the copies against that repository, so the ports cannot quietly drift
+apart.
 
 ## What it holds
 
@@ -73,15 +78,44 @@ check(firstBlock == 0..1)
 `decodeWork` reads a work file, `decodeWorkFromBook` an assembled book, and
 `WorkCorpus.work(language, pieces, reading)` assembles values a caller already
 holds. `Work.language` is the language tag the work gives, such as `en`, `eng`
-or `en-GB`; nothing here assumes one. Every number a work carries is a YAML
-integer that fits in 32 bits.
+or `en-GB`; nothing here assumes one.
 
-All three refuse a malformed work with an error that says what is wrong and
-where: pieces not numbered from one in order, parts that do not cover the work
-exactly once, reading thresholds out of order, a language that is not a
-language tag, a number that is not a 32-bit integer, cuts that do not add up
-to the lines of their piece, or a YAML anchor, alias or `<<` merge key in place
-of a value written out in full.
+Every number a work carries — piece numbers and identifiers, cut sizes, part
+bounds, free pieces, the difficult-word threshold — is a whole number that fits
+in 32 bits. In YAML it is written as plain decimal digits: `0`, or digits that
+do not start with `0` after an optional `-`. In JSON it is a JSON number whose
+value is whole, so `5.0` reads as 5, read from its literal and of fewer than 38
+significant digits. The stage field bounds are fractions: in YAML plain decimal
+digits with an optional `-` and fractional part, such as `0.001` or `1`; in
+JSON a JSON number of fewer than 38 significant digits that a `Double` holds
+without rounding it to zero or infinity.
+
+`decodeWork` and `decodeWorkFromBook` refuse a malformed work with an error
+that says what is wrong and where:
+
+- a document that is not YAML, a missing field or a value of the wrong kind
+  (`DocumentError`);
+- a number not written or not valued as above (`InvalidNumber`), a piece or
+  free-piece identifier that is not such a number (`PieceIsNotNumbered`), or a
+  bound not written as above (`InvalidFraction`);
+- a text the work needs left null (`NullText`), where YAML null is `null`,
+  `Null`, `NULL`, `~` or nothing, and empty text is written `""`;
+- a YAML anchor, alias or `<<` merge key (`YamlReference`), or a key named twice
+  in one mapping (`RepeatedKey`, naming the key repeated first);
+- pieces not numbered from one in order (`OutOfOrder`), parts that do not cover
+  the work exactly once or run past it, free pieces that are empty, repeated or
+  outside the work, stage field bounds out of order, a threshold below one, a
+  language that is not a language tag, or cuts that do not add up to the lines
+  of their piece (`WorkShapeError`).
+
+`WorkCorpus.work` holds values a caller already has to the rules of the last
+item. `Work.serializer()` and the serializers of `Piece`, `Part`,
+`StageFieldScale` and `DifficultWordsConfiguration` read a value from kaml or
+from kotlinx.serialization JSON by the same rules for numbers, fractions and
+texts, but only `decodeWork` and `decodeWorkFromBook` parse the YAML
+themselves: decoding through a `Yaml` of the caller's leaves anchors, aliases
+and repeated keys to that `Yaml`'s configuration and errors, and neither way
+checks relationships between the fields.
 
 ## Install
 

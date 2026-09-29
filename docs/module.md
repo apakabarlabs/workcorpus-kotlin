@@ -11,7 +11,10 @@ have to add up to exactly the lines of their piece: a cut of no lines, cuts long
 or shorter than their piece, and cuts for a stage that is not a cut reading stage
 are refused with the piece and the stage named. A stage the work says nothing
 about is read line by line. A work is written out in full: YAML anchors, aliases
-and `<<` merge keys are refused, naming where they stand. `WorkCorpus.work` assembles a work
+and `<<` merge keys are refused, naming where they stand, and so is a key named
+twice in one mapping. These YAML rules hold through `decodeWork` and
+`decodeWorkFromBook`, which parse the YAML themselves; decoding `Work` with a `Yaml`
+of the caller's leaves them to that `Yaml`. `WorkCorpus.work` assembles a work
 from its language and the `HeldPiece` and `HeldReading` values a caller already
 holds, and validates it the same way.
 

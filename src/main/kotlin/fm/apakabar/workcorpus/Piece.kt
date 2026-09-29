@@ -100,7 +100,7 @@ internal object WholeNumberSerializer : KSerializer<Int> {
         value: Int,
     ) = encoder.encodeInt(value)
 
-    private fun isPlainDecimal(written: String): Boolean {
+    internal fun isPlainDecimal(written: String): Boolean {
         val digits = written.removePrefix("-")
         return digits.isNotEmpty() && digits.all { it in '0'..'9' } && (digits[0] != '0' || written == "0")
     }

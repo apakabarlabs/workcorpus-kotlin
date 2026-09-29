@@ -59,3 +59,32 @@ cases:
     replace: "            - 2\n"
     with: "            - [2]\n"
     refused: "The work's sections[0].pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a piece identifier written with + is refused
+    fixture: work
+    replace: "id: '3'"
+    with: "id: '+3'"
+    refused: "The work calls a piece +3, which is not a number."
+  - case: a piece identifier written with a leading zero is refused
+    fixture: work
+    replace: "id: '3'"
+    with: "id: '03'"
+    refused: "The work calls a piece 03, which is not a number."
+  - case: a piece identifier written as -0 is refused
+    fixture: work
+    replace: "id: '3'"
+    with: "id: '-0'"
+    refused: "The work calls a piece -0, which is not a number."
+  - case: a piece identifier with a space around it is refused
+    fixture: work
+    replace: "id: '3'"
+    with: "id: ' 3'"
+    refused: "The work calls a piece  3, which is not a number."
+  - case: a free piece written with + is refused
+    fixture: work
+    replace: "    - '1'\n"
+    with: "    - '+1'\n"
+    refused: "The work calls a piece +1, which is not a number."
+  - case: a piece identifier written as a bare integer is read
+    fixture: work
+    replace: "id: '3'"
+    with: "id: 3"

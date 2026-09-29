@@ -18,9 +18,12 @@
   plain decimal digits with an optional `-` and no leading zero, and read as an
   `Int`. A larger value, a quoted string, a float, a boolean, null, a list or a
   mapping in place of the number, or a number written with `+`, a leading zero, as
-  `-0`, with underscores, `0x`/`0o`/`0b` or as sexagesimal `1:30` is refused with `WorkShapeError.InvalidNumber`, naming the field, such as
+  `-0`, with underscores, `0x`/`0o`/`0b` or as sexagesimal `1:30` is refused with
+  `WorkShapeError.InvalidNumber`, naming the field, such as
   `pieces[0].cuts.block[1]`, and keeping the parser's own error as its cause when
-  there is one.
+  there is one. The piece and free-piece identifiers of a work file are held to the
+  same writing and the same 32 bits, and one that is not, such as `'+3'`, `'03'`
+  or `'-0'`, is refused with `WorkError.PieceIsNotNumbered`.
 - `PieceAsset` compares a stem and a file name in Unicode normalization form C and
   reads only the ASCII digits `0` to `9` as the digits of a piece number.
 - The lead's `Piece.passage` and `PieceStanding` are not ported yet. Both are built

@@ -24,7 +24,10 @@ object WorkCorpus {
     sealed class WorkError(
         message: String,
     ) : Exception(message) {
-        /** A piece or free-piece identifier cannot be converted to its number. */
+        /**
+         * A piece or free-piece identifier is not a number written as a work writes one:
+         * plain decimal digits that fit in 32 bits, as [Work] describes.
+         */
         data class PieceIsNotNumbered(
             val id: String,
         ) : WorkError("The work calls a piece $id, which is not a number.")

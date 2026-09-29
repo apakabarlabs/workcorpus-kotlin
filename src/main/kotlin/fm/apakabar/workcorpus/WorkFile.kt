@@ -75,12 +75,9 @@ internal fun assembleWork(yaml: String): Work {
     )
 }
 
-private fun numbered(id: String): Int = id.toStrictIntOrNull() ?: throw WorkCorpus.WorkError.PieceIsNotNumbered(id)
-
-private fun String.toStrictIntOrNull(): Int? {
-    val digits = if (startsWith("+") || startsWith("-")) substring(1) else this
-    return if (digits.isNotEmpty() && digits.all { it in '0'..'9' }) toIntOrNull() else null
-}
+private fun numbered(id: String): Int =
+    id.takeIf(WholeNumberSerializer::isPlainDecimal)?.toIntOrNull()
+        ?: throw WorkCorpus.WorkError.PieceIsNotNumbered(id)
 
 private fun parts(sections: List<WorkSection>): List<WorkSection> =
     sections.flatMap { section ->

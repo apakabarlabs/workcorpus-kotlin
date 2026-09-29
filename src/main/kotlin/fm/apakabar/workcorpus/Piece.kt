@@ -81,7 +81,9 @@ internal object WholeNumberSerializer : KSerializer<Int> {
         if (decoder !is YamlInput) return decoder.decodeInt()
         val place = place(decoder.node.path)
         val scalar = decoder.node as? YamlScalar
-        if (scalar == null || !scalar.plain) throw WorkCorpus.WorkShapeError.InvalidNumber(place)
+        if (scalar == null || !scalar.plain || !isPlainDecimal(scalar.content)) {
+            throw WorkCorpus.WorkShapeError.InvalidNumber(place)
+        }
         return try {
             decoder.decodeInt()
         } catch (failure: YamlException) {
@@ -93,6 +95,11 @@ internal object WholeNumberSerializer : KSerializer<Int> {
         encoder: Encoder,
         value: Int,
     ) = encoder.encodeInt(value)
+
+    private fun isPlainDecimal(written: String): Boolean {
+        val digits = written.removePrefix("-")
+        return digits.isNotEmpty() && digits.all { it in '0'..'9' } && (digits[0] != '0' || digits.length == 1)
+    }
 
     private fun place(path: YamlPath): String =
         path.segments

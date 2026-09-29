@@ -159,6 +159,25 @@ class WorkTests {
         assertEquals(WorkCorpus.WorkShapeError.InvalidNumber(place), error)
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = ["010", "0x4", "0o4", "0b1", "1_0", "+1", "1:30"])
+    fun `a number not written as plain decimal digits is refused, whatever YAML makes of it`(written: String) {
+        val fixture = Fixtures.text("book-with-listening")
+        val threshold = fixture.replace("  score_threshold: 3\n", "  score_threshold: $written\n")
+        val cut = fixture.replace(LINES, "$LINES    cuts:\n      block: [$written]\n")
+
+        assertNotEquals(fixture, threshold)
+        assertNotEquals(fixture, cut)
+        assertEquals(
+            WorkCorpus.WorkShapeError.InvalidNumber("difficult_words.score_threshold"),
+            assertFailsWith<WorkCorpus.WorkShapeError.InvalidNumber> { WorkCorpus.decodeWorkFromBook(threshold) },
+        )
+        assertEquals(
+            WorkCorpus.WorkShapeError.InvalidNumber("pieces[0].cuts.block[0]"),
+            assertFailsWith<WorkCorpus.WorkShapeError.InvalidNumber> { WorkCorpus.decodeWorkFromBook(cut) },
+        )
+    }
+
     @Test
     fun `what is wrong with a number is said naming the field, with the parser's reason kept`() {
         val book = Fixtures.text("book-with-listening").replace("free: [1]\n", "free: [2147483648]\n")
@@ -222,6 +241,7 @@ class WorkTests {
                 Arguments.of(LINES, "$LINES    cuts:\n      block: [1.0]\n", "pieces[0].cuts.block[0]"),
                 Arguments.of(LINES, "$LINES    cuts:\n      block: [true]\n", "pieces[0].cuts.block[0]"),
                 Arguments.of("  - number: 1\n", "  - number: '1'\n", "pieces[0].number"),
+                Arguments.of("  - number: 1\n", "  - number: 01\n", "pieces[0].number"),
                 Arguments.of("    last: 1\n", "    last: '1'\n", "parts[0].last"),
                 Arguments.of("free: [1]\n", "free: [2147483648]\n", "free[0]"),
                 Arguments.of("  score_threshold: 3\n", "  score_threshold: 3.5\n", "difficult_words.score_threshold"),

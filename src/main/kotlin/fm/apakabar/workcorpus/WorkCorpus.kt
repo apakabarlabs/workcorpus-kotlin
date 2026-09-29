@@ -4,7 +4,7 @@ package fm.apakabar.workcorpus
  * Decodes, assembles, and validates portable reading works.
  *
  * Every number a work carries, from piece numbers to cut sizes, is a YAML integer that
- * fits in 32 bits.
+ * fits in 32 bits, written as plain decimal digits; see [Work].
  */
 object WorkCorpus {
     /** Piece numbering does not form the required sequence beginning at one. */
@@ -58,8 +58,8 @@ object WorkCorpus {
 
         /**
          * A field that holds a number holds something else: a quoted string, a float, a
-         * boolean, or an integer that does not fit in 32 bits. The parser's own error, when
-         * there is one, is kept as the cause.
+         * boolean, an integer that does not fit in 32 bits, or one not written as plain
+         * decimal digits. The parser's own error, when there is one, is kept as the cause.
          */
         data class InvalidNumber(
             val place: String,

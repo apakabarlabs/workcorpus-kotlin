@@ -26,12 +26,16 @@ import kotlinx.serialization.encoding.encodeStructure
  *
  * Decoded from JSON, a number is a JSON number whose value is a whole number that fits
  * in 32 bits, so `5` and `5.0` both read as 5. A string such as `"5"`, a boolean, null,
- * a fraction, a value past 32 bits and `-0` are refused as in YAML. The value is taken
- * exactly as written, so `5.000000000000000001` is a fraction.
+ * a fraction, a value past 32 bits and `-0` are refused as in YAML. The value is read as
+ * a decimal from the literal rather than through a binary float, so
+ * `5.000000000000000001` is a fraction. A number of 38 or more significant digits is
+ * refused, since the lead's `Decimal` holds no more.
  *
  * The stage field bounds are fractions held to the same one writing: in YAML, plain
  * decimal digits with an optional `-` and fractional part, such as `0.001` or `1`, and
- * never quoted, with `_`, an exponent or as sexagesimal; in JSON, a JSON number.
+ * never quoted, with `_`, an exponent or as sexagesimal; in JSON, a JSON number of fewer
+ * than 38 significant digits that a `Double` holds without rounding it to zero or
+ * infinity.
  *
  * A work is written out in full. A YAML anchor, an alias or a `<<` merge key, quoted or
  * not, is refused with [WorkCorpus.WorkShapeError.YamlReference], since YAML readers do

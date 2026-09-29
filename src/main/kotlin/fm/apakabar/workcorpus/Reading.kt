@@ -39,13 +39,24 @@ internal fun Node.whole(): Int {
 internal fun Node.fraction(): Double {
     val scalar = this as? Node.Scalar
     val number =
-        scalar
-            ?.takeIf { it.bare && (it.json || isPlainFraction(it.text)) }
-            ?.text
-            ?.toDoubleOrNull()
-            ?.takeIf { it.isFinite() }
-    return number ?: throw WorkCorpus.WorkShapeError.InvalidFraction(place)
+        when {
+            scalar == null || !scalar.bare -> null
+            scalar.json -> exactJsonNumber(scalar.text)?.let(::representableDouble)
+            isPlainFraction(scalar.text) -> scalar.text.toDouble()
+            else -> null
+        }
+    return number?.takeIf { it.isFinite() } ?: throw WorkCorpus.WorkShapeError.InvalidFraction(place)
 }
+
+private fun representableDouble(exact: BigDecimal): Double? {
+    val value = exact.toDouble()
+    return value.takeIf { it.isFinite() && (it == 0.0) == (exact.signum() == 0) }
+}
+
+private fun exactJsonNumber(written: String): BigDecimal? =
+    written.toBigDecimalOrNull()?.stripTrailingZeros()?.takeIf { it.precision() < JSON_SIGNIFICANT_DIGITS }
+
+private const val JSON_SIGNIFICANT_DIGITS = 38
 
 private fun isPlainFraction(written: String): Boolean {
     val whole = written.substringBefore('.')
@@ -60,7 +71,7 @@ internal fun isPlainDecimal(written: String): Boolean {
 }
 
 private fun exactWhole(written: String): Int? {
-    val value = written.toBigDecimalOrNull()?.stripTrailingZeros() ?: return null
+    val value = exactJsonNumber(written) ?: return null
     val negativeZero = value.signum() == 0 && written.startsWith("-")
     if (negativeZero || value.scale() > 0 || value !in INT_RANGE) return null
     return value.intValueExact()

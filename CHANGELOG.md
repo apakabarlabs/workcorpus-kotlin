@@ -38,7 +38,8 @@
   with an optional `-` and fractional part, such as `0.001` or `1`; in JSON a JSON
   number. A quoted value, a boolean, null, or in YAML `0.5_0`, `.5`, `5e-1` or
   sexagesimal `1:00` is refused with `WorkShapeError.InvalidFraction`, naming the
-  field.
+  field, and so is a JSON bound of 38 or more significant digits or one a `Double`
+  cannot hold, such as `1e-400` or `1e400`.
 - A YAML mapping that names a key twice is refused with
   `WorkShapeError.RepeatedKey`, naming the key. A key the work does not know is
   skipped, in YAML and in JSON alike, whatever the `Json` configuration says of
@@ -54,7 +55,9 @@
   number is held to its value, as the lead's `Decodable` holds it: a whole number
   within 32 bits reads, so `5.0` reads as 5, while a string such as `"5"`, a
   boolean, null, a fraction, a value past 32 bits or `-0` is refused with
-  `WorkShapeError.InvalidNumber`, naming the field.
+  `WorkShapeError.InvalidNumber`, naming the field. The value is read as a decimal
+  from the literal, and a JSON number of 38 or more significant digits is refused,
+  as the lead's `Decimal` holds no more.
 - A work file or book that gives a value a YAML anchor, takes one from an alias,
   or merges a mapping in with a `<<` key, quoted or not, is refused with
   `WorkShapeError.YamlReference`, naming the anchored value or the merging

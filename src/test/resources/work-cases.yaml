@@ -53,6 +53,40 @@ cases:
     with: '"score_threshold": 2147483647.0000001'
     error: invalidNumber
     refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON whole number padded with zeros past 38 digits is read, since trailing zeros are not significant
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": 5.0000000000000000000000000000000000000'
+    read: {threshold: 5}
+  - case: a JSON number of 38 significant digits is refused
+    fixture: json-book
+    replace: '"score_threshold": 3'
+    with: '"score_threshold": 5.0000000000000000000000000000000000001'
+    error: invalidNumber
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a JSON fraction of 37 significant digits is read by its value
+    fixture: json-book
+    replace: '"begun_below": 0.5'
+    with: '"begun_below": 0.2500000000000000000000000000000000001'
+    read: {bands: [0.001, 0.25, 1.0]}
+  - case: a JSON fraction of 38 significant digits is refused, as neither port holds it exactly
+    fixture: json-book
+    replace: '"begun_below": 0.5'
+    with: '"begun_below": 0.25000000000000000000000000000000000001'
+    error: invalidFraction
+    refused: "The work's stage_field.begun_below is not a decimal number written as plain digits."
+  - case: a JSON fraction too small for a double is refused rather than read as zero
+    fixture: json-book
+    replace: '"untouched_below": 0.001'
+    with: '"untouched_below": 1e-400'
+    error: invalidFraction
+    refused: "The work's stage_field.untouched_below is not a decimal number written as plain digits."
+  - case: a JSON fraction too large for a double is refused
+    fixture: json-book
+    replace: '"most_below": 1.0'
+    with: '"most_below": 1e400'
+    error: invalidFraction
+    refused: "The work's stage_field.most_below is not a decimal number written as plain digits."
   - case: a JSON threshold of 1e400 is refused
     fixture: json-book
     replace: '"score_threshold": 3'

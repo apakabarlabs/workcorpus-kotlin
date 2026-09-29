@@ -829,6 +829,84 @@ cases:
     replace: "    title: First poem\n"
     with: "    title: 'Null'\n"
     read: {titles: ["Null"]}
+  - case: a number written with an explicit string tag is refused rather than read
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: !!str 3\n"
+    error: explicitTag
+    refused: "The work's difficult_words.score_threshold is written with an explicit YAML tag; a work leaves the kind of each value to its field."
+  - case: a number written with an explicit int tag is refused
+    fixture: work
+    replace: "  difficult_word_score: 3\n"
+    with: "  difficult_word_score: !!int 3\n"
+    error: explicitTag
+    refused: "The work's reading.difficult_word_score is written with an explicit YAML tag; a work leaves the kind of each value to its field."
+  - case: a text written with a tag of its own is refused
+    fixture: book-with-listening
+    replace: "    title: First poem\n"
+    with: "    title: !poem First poem\n"
+    error: explicitTag
+    refused: "The work's pieces[0].title is written with an explicit YAML tag; a work leaves the kind of each value to its field."
+  - case: a text written with the non-specific tag is refused
+    fixture: book-with-listening
+    replace: "    title: First poem\n"
+    with: "    title: ! First poem\n"
+    error: explicitTag
+    refused: "The work's pieces[0].title is written with an explicit YAML tag; a work leaves the kind of each value to its field."
+  - case: a list written with an explicit tag is refused
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: !!seq [The first line.]\n"
+    error: explicitTag
+    refused: "The work's pieces[0].lines is written with an explicit YAML tag; a work leaves the kind of each value to its field."
+  - case: a mapping written with an explicit tag is refused
+    fixture: book-with-listening
+    replace: "difficult_words:\n"
+    with: "difficult_words: !!map\n"
+    error: explicitTag
+    refused: "The work's difficult_words is written with an explicit YAML tag; a work leaves the kind of each value to its field."
+  - case: an anchor before a repeated key is named first, as it comes first
+    fixture: book-with-listening
+    replace: "    title: First poem\n"
+    with: "    title: &poem First poem\n    title: Again\n"
+    error: yamlReference
+    refused: "The work's pieces[0].title is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
+  - case: a repeated key before an anchor is named first, as it comes first
+    fixture: book-with-listening
+    replace: "language: eng\npieces:\n  - number: 1\n    title: First poem\n"
+    with: "language: eng\nlanguage: eng\npieces:\n  - number: 1\n    title: &poem First poem\n"
+    error: repeatedKey
+    refused: "The work names language more than once in one mapping."
+  - case: a merge key before a repeated key is named first
+    fixture: book-with-listening
+    replace: "  - title: Opening poems\n"
+    with: "  - <<: {short: Opening}\n    title: Opening poems\n    title: Again\n"
+    error: yamlReference
+    refused: "The work's parts[0] is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
+  - case: a tag before a repeated key is named first
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: !!str 3\n  score_threshold: 3\n"
+    error: explicitTag
+    refused: "The work's difficult_words.score_threshold is written with an explicit YAML tag; a work leaves the kind of each value to its field."
+  - case: a repeated key is named before the tag on its own value, which comes after it
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: 3\n  score_threshold: !!str 3\n"
+    error: repeatedKey
+    refused: "The work names score_threshold more than once in one mapping."
+  - case: an alias with no anchor is refused as a YAML reference, naming the field
+    fixture: book-with-listening
+    replace: "    title: First poem\n"
+    with: "    title: *nowhere\n"
+    error: yamlReference
+    refused: "The work's pieces[0].title is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
+  - case: an alias with no anchor in a list is refused, naming the entry
+    fixture: book-with-listening
+    replace: "free: [1]\n"
+    with: "free: [*nowhere]\n"
+    error: yamlReference
+    refused: "The work's free[0] is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
   - case: parts that cover a piece twice are refused
     fixture: book-with-listening
     replace: "    first: 1\n    last: 1\n"

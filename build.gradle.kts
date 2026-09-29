@@ -21,6 +21,7 @@ version =
 
 dependencies {
     implementation("io.heapy.kotaml:kotaml:0.110.0")
+    implementation("it.krzeminski:snakeyaml-engine-kmp:4.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 
     testImplementation(kotlin("test"))

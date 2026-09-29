@@ -114,19 +114,15 @@ object WorkCorpus {
         /**
          * A value is given a YAML anchor, taken from an alias, or merged in with a `<<` key.
          * YAML readers resolve these differently, so a work writes every value out where it
-         * belongs; the place is the anchored value or the merging mapping. The parser's own
-         * error, when there is one, is kept as the cause.
+         * belongs; the place is the anchored value, the alias, or the merging mapping. An alias
+         * with no anchor, such as `*nowhere`, is refused the same way.
          */
         data class YamlReference(
             val place: String,
         ) : WorkShapeError(
                 "The work's $place is written with a YAML anchor, alias or merge key; " +
                     "a work writes each value out where it belongs.",
-            ) {
-            internal constructor(place: String, cause: Throwable) : this(place) {
-                initCause(cause)
-            }
-        }
+            )
 
         /**
          * A field that holds text is null, as the YAML 1.2 core schema reads null: written as
@@ -147,15 +143,21 @@ object WorkCorpus {
 
         /**
          * A YAML mapping names the same key more than once. Of several repeated keys, the one
-         * repeated first in the document is named. The parser's own error is kept as the cause.
+         * repeated first in the document is named, even among several on one line.
          */
         data class RepeatedKey(
             val key: String,
-        ) : WorkShapeError("The work names $key more than once in one mapping.") {
-            internal constructor(key: String, cause: Throwable) : this(key) {
-                initCause(cause)
-            }
-        }
+        ) : WorkShapeError("The work names $key more than once in one mapping.")
+
+        /**
+         * A value is written with an explicit YAML tag, such as `!!str 3` or `!poem`. A work
+         * never needs one, and a tag would let a value read as another kind than it is written.
+         */
+        data class ExplicitTag(
+            val place: String,
+        ) : WorkShapeError(
+                "The work's $place is written with an explicit YAML tag; a work leaves the kind of each value to its field.",
+            )
 
         final override fun toString(): String = "${javaClass.name}: $message"
     }

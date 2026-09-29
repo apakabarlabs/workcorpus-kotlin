@@ -1,7 +1,5 @@
 package fm.apakabar.workcorpus
 
-import com.charleskorn.kaml.DuplicateKeyException
-import com.charleskorn.kaml.ForbiddenAnchorOrAliasException
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlException
 import com.charleskorn.kaml.YamlInput
@@ -9,7 +7,6 @@ import com.charleskorn.kaml.YamlList
 import com.charleskorn.kaml.YamlMap
 import com.charleskorn.kaml.YamlNode
 import com.charleskorn.kaml.YamlNull
-import com.charleskorn.kaml.YamlPathSegment
 import com.charleskorn.kaml.YamlScalar
 import com.charleskorn.kaml.YamlTaggedNode
 import kotlinx.serialization.encoding.Decoder
@@ -53,45 +50,15 @@ internal sealed class Node {
 }
 
 internal fun parseYaml(yaml: String): Node {
+    refuseYamlProblems(yaml)
     val root =
         try {
             Yaml.default.parseToYamlNode(yaml)
-        } catch (reference: ForbiddenAnchorOrAliasException) {
-            throw WorkCorpus.WorkShapeError.YamlReference(referencePlace(reference.path.segments), reference)
-        } catch (repeated: DuplicateKeyException) {
-            throw WorkCorpus.WorkShapeError.RepeatedKey(firstRepeatedKey(yaml) ?: repeatedKey(repeated), repeated)
         } catch (failure: YamlException) {
-            val segments = failure.path.segments
-            val merge = segments.indexOfFirst(::isMerge)
-            if (merge >= 0) throw WorkCorpus.WorkShapeError.YamlReference(referencePlace(segments.take(merge)), failure)
             throw WorkCorpus.DocumentError("The work cannot be read as YAML: ${failure.message}", failure)
         }
     return yamlNode(root, place = "")
 }
-
-private fun firstRepeatedKey(yaml: String): String? {
-    val lines = yaml.split('\n')
-    for (count in 1..lines.size) {
-        val leading = lines.take(count).joinToString("\n")
-        try {
-            Yaml.default.parseToYamlNode(leading)
-        } catch (repeated: DuplicateKeyException) {
-            return repeatedKey(repeated)
-        } catch (unfinished: YamlException) {
-            continue
-        }
-    }
-    return null
-}
-
-private fun repeatedKey(repeated: DuplicateKeyException): String =
-    repeated.duplicatePath.segments
-        .filterIsInstance<YamlPathSegment.MapElementKey>()
-        .lastOrNull()
-        ?.key ?: repeated.key
-
-private fun isMerge(segment: YamlPathSegment): Boolean =
-    segment is YamlPathSegment.Merge || (segment is YamlPathSegment.MapElementKey && segment.key == "<<")
 
 internal fun treeOf(decoder: Decoder): Node =
     when (decoder) {
@@ -105,11 +72,8 @@ private val CORE_SCHEMA_NULLS = setOf("", "~", "null", "Null", "NULL")
 private fun yamlNode(
     node: YamlNode,
     place: String,
-): Node {
-    val segments = node.path.segments
-    val merge = segments.indexOfFirst { it is YamlPathSegment.Merge }
-    if (merge >= 0) throw WorkCorpus.WorkShapeError.YamlReference(referencePlace(segments.take(merge)))
-    return when (node) {
+): Node =
+    when (node) {
         is YamlNull -> Node.Null(place)
         is YamlScalar ->
             if (node.plain && node.content in CORE_SCHEMA_NULLS) {
@@ -122,13 +86,11 @@ private fun yamlNode(
             Node.Mapping(
                 place,
                 node.entries.entries.associate { (key, value) ->
-                    yamlNode(key, place)
                     key.content to yamlNode(value, within(place, key.content))
                 },
             )
         is YamlTaggedNode -> yamlNode(node.innerNode, place)
     }
-}
 
 private fun jsonNode(
     element: JsonElement,
@@ -145,14 +107,3 @@ internal fun within(
     place: String,
     name: String,
 ): String = if (place.isEmpty()) name else "$place.$name"
-
-private fun referencePlace(segments: List<YamlPathSegment>): String =
-    segments
-        .joinToString("") { segment ->
-            when (segment) {
-                is YamlPathSegment.ListEntry -> "[${segment.index}]"
-                is YamlPathSegment.MapElementKey -> ".${segment.key}"
-                else -> ""
-            }
-        }.removePrefix(".")
-        .ifEmpty { "top level" }

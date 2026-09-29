@@ -19,7 +19,7 @@ internal fun Node.items(): List<Node> = (this as? Node.Sequence)?.items ?: throw
 
 internal fun Node.text(): String =
     when {
-        this is Node.Null -> throw WorkCorpus.DocumentError("The work's ${shown(place)} is null where text belongs.")
+        this is Node.Null -> throw WorkCorpus.WorkShapeError.NullText(shown(place))
         this is Node.Scalar && !(json && bare) -> text
         else -> throw mismatch("text")
     }

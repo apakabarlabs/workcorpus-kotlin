@@ -128,6 +128,14 @@ object WorkCorpus {
             }
         }
 
+        /**
+         * A field that holds text is null: written as `~`, `null` or left empty. Empty text
+         * is written as `""`.
+         */
+        data class NullText(
+            val place: String,
+        ) : WorkShapeError("The work's $place is null where text belongs; an empty text is written as \"\".")
+
         final override fun toString(): String = "${javaClass.name}: $message"
     }
 

@@ -113,6 +113,17 @@ cases:
     with: '"lines": ["The first line."], "cuts": {"block": [1.5]}'
     error: invalidNumber
     refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a JSON piece title given as null is refused, naming the field
+    fixture: json-book
+    replace: '"title": "First poem"'
+    with: '"title": null'
+    error: nullText
+    refused: "The work's pieces[0].title is null where text belongs; an empty text is written as \"\"."
+  - case: a JSON line written as an empty string is a blank line
+    fixture: json-book
+    replace: '"lines": ["The first line."]'
+    with: '"lines": ["", "The first line."]'
+    read: {lines: ["", The first line.]}
   - case: a cut written as -0 is refused
     fixture: book-with-listening
     replace: "    lines: [The first line.]\n"
@@ -185,6 +196,53 @@ cases:
     with: "            - [2]\n"
     error: invalidNumber
     refused: "The work's sections[0].pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a piece title written as ~ is refused as null, not read as a tilde
+    fixture: book-with-listening
+    replace: "    title: First poem\n"
+    with: "    title: ~\n"
+    error: nullText
+    refused: "The work's pieces[0].title is null where text belongs; an empty text is written as \"\"."
+  - case: a line written as null is refused, naming the line
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line., null]\n"
+    error: nullText
+    refused: "The work's pieces[0].lines[1] is null where text belongs; an empty text is written as \"\"."
+  - case: a line left empty after its dash is refused, naming the line
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines:\n      - The first line.\n      -\n"
+    error: nullText
+    refused: "The work's pieces[0].lines[1] is null where text belongs; an empty text is written as \"\"."
+  - case: a part summary left empty is refused, naming the field
+    fixture: book-with-listening
+    replace: "    summary: The first part.\n"
+    with: "    summary:\n"
+    error: nullText
+    refused: "The work's parts[0].summary is null where text belongs; an empty text is written as \"\"."
+  - case: a language written as null is refused, naming the field
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: null\n"
+    error: nullText
+    refused: "The work's language is null where text belongs; an empty text is written as \"\"."
+  - case: a line written as "" is a blank line
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: ['', The first line.]\n"
+    read: {lines: ["", The first line.]}
+  - case: a work file piece title left empty is refused, naming the field
+    fixture: work
+    replace: "        title: Sonnet 2\n"
+    with: "        title:\n"
+    error: nullText
+    refused: "The work's sections[0].pieces[1].title is null where text belongs; an empty text is written as \"\"."
+  - case: a work file piece identifier written as null is refused as null text
+    fixture: work
+    replace: "id: '3'"
+    with: "id: null"
+    error: nullText
+    refused: "The work's sections[1].pieces[0].id is null where text belongs; an empty text is written as \"\"."
   - case: a piece identifier written with + is refused
     fixture: work
     replace: "id: '3'"

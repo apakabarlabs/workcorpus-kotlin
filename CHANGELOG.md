@@ -27,6 +27,12 @@
   missing, or a list where text belongs — is refused with
   `WorkCorpus.DocumentError`, naming the field. No error of the YAML or JSON
   parser reaches a caller except as the cause of one of the library's own.
+- A text a work needs — its language, a piece's title, identifier and lines, a
+  part's title and summary, a work file's slug and title — is refused with
+  `WorkShapeError.NullText`, naming the field, when it is null: written as `~` or
+  `null`, or left empty after its key or dash. Empty text is written as `""`, as a
+  blank line of a poem is. A null `short`, `summary` of a work-file section or
+  `cuts` reads as none.
 - `Work`, `Piece`, `Part`, `StageFieldScale` and `DifficultWordsConfiguration`
   are `@Serializable` with serializers of their own on the stable
   kotlinx.serialization API. Decoded from YAML through kaml or from JSON through

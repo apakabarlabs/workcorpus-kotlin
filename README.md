@@ -102,9 +102,10 @@ that says what is wrong and where:
   `Null`, `NULL`, `~` or nothing, and empty text is written `""`;
 - a YAML anchor, alias or `<<` merge key (`YamlReference`), an explicit YAML tag
   such as `!!str 3` (`ExplicitTag`), or a key named twice in one mapping
-  (`RepeatedKey`); of several of these, the one first in the document, and of
-  several keys repeated on one line, as a flow mapping can, the first written,
-  where the lead names the first in code-point order;
+  (`RepeatedKey`); of several of these, the one first in the document, even
+  before a syntax error further on, and of several keys repeated on one line, as
+  a flow mapping can, the first written, where the lead names the first in
+  code-point order; a key that is a list or a mapping is a `DocumentError`;
 - pieces not numbered from one in order (`OutOfOrder`), parts that do not cover
   the work exactly once or run past it, free pieces that are empty, repeated or
   outside the work, stage field bounds out of order, a threshold below one, a
@@ -118,10 +119,11 @@ test with the default `Json`; it checks no relationships between the fields, a
 JSON syntax error reaches the caller as kotlinx.serialization's own error, and a
 key repeated in one JSON object is not refused, the value kept possibly differing
 from the lead's. The YAML rules hold only through `decodeWork` and
-`decodeWorkFromBook`. Two rare differences from the lead no case pins: keys equal
-only under Unicode canonical equivalence count as one key there and as two here,
-and `!!str` written on a quoted value or on a key is refused here while the
-lead, which cannot see it, reads the value as untagged.
+`decodeWorkFromBook`. Rare differences from the lead no case pins: keys equal
+only under Unicode canonical equivalence count as one key there and as two here;
+`!!str` written on a quoted value, or `!!str` or `!` on a key, is refused here
+while the lead, which cannot see it, reads it as untagged; and within one flow
+collection the lead may name a later problem before an earlier tag or anchor.
 
 ## Install
 
@@ -145,6 +147,13 @@ The library reads YAML with [kotaml](https://github.com/Heapy/kotaml)
 (`com.charleskorn.kaml:kaml`) gets two sets of the same classes on its classpath;
 keep one of the two, or exclude one from the other's dependency. Neither appears
 in this library's public API.
+
+The library also depends directly on
+[snakeyaml-engine-kmp](https://github.com/krzema12/snakeyaml-engine-kmp)
+(`it.krzeminski:snakeyaml-engine-kmp`), whose parser events it reads to find the
+first YAML problem in a work. kotaml brings the same library, and the version
+declared here has to be the one the declared kotaml version requires; raising
+one means raising the other to match.
 
 ## Documentation
 

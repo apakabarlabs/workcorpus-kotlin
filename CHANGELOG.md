@@ -46,14 +46,20 @@
   with an explicit YAML tag, such as `!!str 3`, with the new
   `WorkShapeError.ExplicitTag`, naming the field; and a mapping that names a key
   twice with `WorkShapeError.RepeatedKey`, naming the key. Of several such
-  problems, the one first in the document is reported, and of several keys
-  repeated on one line, as a flow mapping can, the first written; the lead names
-  the first in code-point order there. Keys equal only under Unicode canonical
-  equivalence count as one key in the lead and as two here, and `!!str` on a
-  quoted value or on a key is refused here while the lead reads it as untagged:
-  rare differences no case pins. A YAML document the parser cannot read at all is refused with
-  `WorkCorpus.DocumentError`, as are a missing field and a value of the wrong
-  kind, naming the field.
+  problems, the one first in the document is reported, even before a syntax
+  error further on, and of several keys repeated on one line, as a flow mapping
+  can, the first written; the lead names the first in code-point order there. An
+  alias standing as a key names the enclosing mapping. A key that is a list or a
+  mapping is refused with `WorkCorpus.DocumentError`, saying the mapping has a
+  key that is not text. A YAML document the parser cannot read, with no problem
+  before the point it fails, is refused with `WorkCorpus.DocumentError`, as are
+  a missing field and a value of the wrong kind, naming the field. Rare
+  differences from the lead no case pins: keys equal only under Unicode canonical
+  equivalence count as one key there and as two here; `!!str` on a quoted value,
+  or `!!str` or `!` on a key, is refused here while the lead reads it as
+  untagged; and within one flow collection the lead may name a later problem
+  before an earlier tag or anchor, and past a long run of lines it cannot read on
+  their own it names the problem found so far.
 - A work file or book of any length is read, as the lead reads it: the limit of
   3,145,728 code points that kaml and snakeyaml-engine put on a document by
   default is lifted.

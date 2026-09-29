@@ -18,16 +18,9 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-/**
- * One value of a work as it was written, in YAML or JSON, with the place it stands at.
- *
- * Every reader of a work reads this tree rather than a format's own decoder, so that YAML
- * and JSON are held to the same rules and every refusal names the field it found.
- */
 internal sealed class Node {
     abstract val place: String
 
-    /** A scalar: [bare] when written without quotes, as a YAML plain scalar or a JSON literal. */
     class Scalar(
         override val place: String,
         val text: String,

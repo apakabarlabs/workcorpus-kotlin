@@ -1,8 +1,75 @@
-json-book: '{"language": "eng", "pieces": [{"number": 1, "title": "First poem", "lines": ["The first line."]}], "parts": [{"title": "Opening poems", "summary": "The first part.", "first": 1, "last": 1}], "free": [1], "stage_field": {"untouched_below": 0.001, "begun_below": 0.5, "most_below": 1.0}, "difficult_words": {"score_threshold": 3}}'
+json-book: '{"language": "eng", "interior_marks": "''’-", "elisions": {"tatter’d": ["tattered"], "th’": ["the"]}, "pieces": [{"number": 1, "title": "First poem", "lines": ["The first line."]}], "parts": [{"title": "Opening poems", "summary": "The first part.", "first": 1, "last": 1}], "free": [1], "stage_field": {"untouched_below": 0.001, "begun_below": 0.5, "most_below": 1.0}, "difficult_words": {"score_threshold": 3}}'
 cases:
   - case: a JSON book is read as it is written
     fixture: json-book
-    read: {numbers: [1], titles: [First poem], lines: [The first line.], parts: [[1, 1]], free: [1], bands: [0.001, 0.5, 1.0], threshold: 3}
+    read: {numbers: [1], titles: [First poem], lines: [The first line.], parts: [[1, 1]], free: [1], bands: [0.001, 0.5, 1.0], threshold: 3, language: eng, interiorMarks: "'’-", elisions: {tatter’d: [tattered], th’: [the]}}
+  - case: a JSON work that keeps no mark inside a word and prints no elision is read
+    fixture: json-book
+    replace: '"interior_marks": "''’-", "elisions": {"tatter’d": ["tattered"], "th’": ["the"]}'
+    with: '"interior_marks": "", "elisions": {}'
+    read: {interiorMarks: "", elisions: {}}
+  - case: a JSON elision may stand for several full forms, kept in the order written
+    fixture: json-book
+    replace: '"th’": ["the"]'
+    with: '"th’": ["the", "thee"]'
+    read: {elisions: {tatter’d: [tattered], th’: [the, thee]}}
+  - case: a JSON work without interior marks is refused by the parser
+    fixture: json-book
+    replace: '"interior_marks": "''’-", '
+    with: ''
+    error: documentError
+  - case: a JSON work without elisions is refused by the parser
+    fixture: json-book
+    replace: '"elisions": {"tatter’d": ["tattered"], "th’": ["the"]}, '
+    with: ''
+    error: documentError
+  - case: JSON interior marks given as null are refused, naming the field
+    fixture: json-book
+    replace: '"interior_marks": "''’-"'
+    with: '"interior_marks": null'
+    error: nullText
+    refused: "The work's interior_marks is null where text belongs; an empty text is written as \"\"."
+  - case: JSON interior marks given as a list of marks are refused by the parser
+    fixture: json-book
+    replace: '"interior_marks": "''’-"'
+    with: '"interior_marks": ["''", "’", "-"]'
+    error: documentError
+  - case: JSON interior marks given as a number are refused by the parser
+    fixture: json-book
+    replace: '"interior_marks": "''’-"'
+    with: '"interior_marks": 0'
+    error: documentError
+  - case: JSON elisions given as null are refused by the parser
+    fixture: json-book
+    replace: '"elisions": {"tatter’d": ["tattered"], "th’": ["the"]}'
+    with: '"elisions": null'
+    error: documentError
+  - case: JSON elisions given as a list are refused by the parser
+    fixture: json-book
+    replace: '"elisions": {"tatter’d": ["tattered"], "th’": ["the"]}'
+    with: '"elisions": [["tatter’d", "tattered"]]'
+    error: documentError
+  - case: a JSON elision whose full forms are one text rather than a list is refused by the parser
+    fixture: json-book
+    replace: '"th’": ["the"]'
+    with: '"th’": "the"'
+    error: documentError
+  - case: a JSON elision whose full forms are null is refused by the parser
+    fixture: json-book
+    replace: '"th’": ["the"]'
+    with: '"th’": null'
+    error: documentError
+  - case: a JSON full form given as null is refused, naming the spelling and the entry
+    fixture: json-book
+    replace: '"th’": ["the"]'
+    with: '"th’": [null]'
+    error: nullText
+    refused: "The work's elisions.th’[0] is null where text belongs; an empty text is written as \"\"."
+  - case: a JSON full form given as a number is refused by the parser
+    fixture: json-book
+    replace: '"th’": ["the"]'
+    with: '"th’": [1]'
+    error: documentError
   - case: a JSON threshold written as 5.0 is the whole number 5
     fixture: json-book
     replace: '"score_threshold": 3'
@@ -200,8 +267,8 @@ cases:
     refused: "The work names summary more than once in one mapping."
   - case: a key repeated early in an outer mapping is named before one repeated later in an inner one
     fixture: book-with-listening
-    replace: "language: eng\npieces:\n  - number: 1\n    title: First poem\n"
-    with: "language: eng\nlanguage: eng\npieces:\n  - number: 1\n    title: First poem\n    title: First poem\n"
+    replace: "  th’: [the]\npieces:\n  - number: 1\n    title: First poem\n"
+    with: "  th’: [the]\nlanguage: eng\npieces:\n  - number: 1\n    title: First poem\n    title: First poem\n"
     error: repeatedKey
     refused: "The work names language more than once in one mapping."
   - case: a cut written as -0 is refused
@@ -796,6 +863,118 @@ cases:
     replace: "language: eng\n"
     with: "language: srp\n"
     read: {language: srp}
+  - case: a book carries the marks its words keep inside and the full forms of its elisions
+    fixture: book-with-listening
+    read: {interiorMarks: "'’-", elisions: {tatter’d: [tattered], th’: [the]}}
+  - case: a book that keeps no mark inside a word and prints no elision is read
+    fixture: book-with-listening
+    replace: "interior_marks: \"'’-\"\nelisions:\n  tatter’d: [tattered]\n  th’: [the]\n"
+    with: "interior_marks: \"\"\nelisions: {}\n"
+    read: {interiorMarks: "", elisions: {}}
+  - case: interior marks are kept as written, whatever script they belong to
+    fixture: book-with-listening
+    replace: "interior_marks: \"'’-\"\n"
+    with: "interior_marks: \"־׳\"\n"
+    read: {interiorMarks: "־׳"}
+  - case: an elision may stand for several full forms, kept in the order written
+    fixture: book-with-listening
+    replace: "  th’: [the]\n"
+    with: "  th’: [the, thee]\n"
+    read: {elisions: {tatter’d: [tattered], th’: [the, thee]}}
+  - case: a book without interior marks is refused by the parser
+    fixture: book-with-listening
+    replace: "interior_marks: \"'’-\"\n"
+    with: ""
+    error: documentError
+  - case: a book without elisions is refused by the parser
+    fixture: book-with-listening
+    replace: "elisions:\n  tatter’d: [tattered]\n  th’: [the]\n"
+    with: ""
+    error: documentError
+  - case: interior marks written as null are refused, naming the field
+    fixture: book-with-listening
+    replace: "interior_marks: \"'’-\"\n"
+    with: "interior_marks: null\n"
+    error: nullText
+    refused: "The work's interior_marks is null where text belongs; an empty text is written as \"\"."
+  - case: interior marks left empty are null and refused; no marks are written as ""
+    fixture: book-with-listening
+    replace: "interior_marks: \"'’-\"\n"
+    with: "interior_marks:\n"
+    error: nullText
+    refused: "The work's interior_marks is null where text belongs; an empty text is written as \"\"."
+  - case: interior marks written as a list of marks are refused by the parser
+    fixture: book-with-listening
+    replace: "interior_marks: \"'’-\"\n"
+    with: "interior_marks: [\"'\", \"’\", \"-\"]\n"
+    error: documentError
+  - case: elisions written as null are refused by the parser; none are written as {}
+    fixture: book-with-listening
+    replace: "elisions:\n  tatter’d: [tattered]\n  th’: [the]\n"
+    with: "elisions: null\n"
+    error: documentError
+  - case: elisions left empty are refused by the parser
+    fixture: book-with-listening
+    replace: "elisions:\n  tatter’d: [tattered]\n  th’: [the]\n"
+    with: "elisions:\n"
+    error: documentError
+  - case: elisions written as a list are refused by the parser
+    fixture: book-with-listening
+    replace: "elisions:\n  tatter’d: [tattered]\n  th’: [the]\n"
+    with: "elisions:\n  - tatter’d\n  - th’\n"
+    error: documentError
+  - case: an elision whose full forms are one text rather than a list is refused by the parser
+    fixture: book-with-listening
+    replace: "  th’: [the]\n"
+    with: "  th’: the\n"
+    error: documentError
+  - case: an elision whose full forms are left empty is refused by the parser
+    fixture: book-with-listening
+    replace: "  th’: [the]\n"
+    with: "  th’:\n"
+    error: documentError
+  - case: a full form written as null is refused, naming the spelling and the entry
+    fixture: book-with-listening
+    replace: "  th’: [the]\n"
+    with: "  th’: [~]\n"
+    error: nullText
+    refused: "The work's elisions.th’[0] is null where text belongs; an empty text is written as \"\"."
+  - case: an elided spelling named twice is refused as a repeated key
+    fixture: book-with-listening
+    replace: "  th’: [the]\n"
+    with: "  th’: [the]\n  th’: [thee]\n"
+    error: repeatedKey
+    refused: "The work names th’ more than once in one mapping."
+  - case: a work file carries the marks its words keep inside and the full forms of its elisions
+    fixture: work
+    read: {interiorMarks: "'’-", elisions: {tatter’d: [tattered], th’: [the]}}
+  - case: a work file without interior marks is refused by the parser
+    fixture: work
+    replace: "interior_marks: \"'’-\"\n"
+    with: ""
+    error: documentError
+  - case: a work file without elisions is refused by the parser
+    fixture: work
+    replace: "elisions:\n  tatter’d: [tattered]\n  th’: [the]\n"
+    with: ""
+    error: documentError
+  - case: a work file's interior marks written as null are refused, naming the field
+    fixture: work
+    replace: "interior_marks: \"'’-\"\n"
+    with: "interior_marks: ~\n"
+    error: nullText
+    refused: "The work's interior_marks is null where text belongs; an empty text is written as \"\"."
+  - case: a work file's elisions given as one text are refused by the parser
+    fixture: work
+    replace: "elisions:\n  tatter’d: [tattered]\n  th’: [the]\n"
+    with: "elisions: tatter’d\n"
+    error: documentError
+  - case: a work file's full form written as null is refused, naming the spelling and the entry
+    fixture: work
+    replace: "  tatter’d: [tattered]\n"
+    with: "  tatter’d: [tattered, null]\n"
+    error: nullText
+    refused: "The work's elisions.tatter’d[1] is null where text belongs; an empty text is written as \"\"."
   - case: a piece title written as Null is null, as the YAML core schema says
     fixture: book-with-listening
     replace: "    title: First poem\n"
@@ -873,8 +1052,8 @@ cases:
     refused: "The work's pieces[0].title is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
   - case: a repeated key before an anchor is named first, as it comes first
     fixture: book-with-listening
-    replace: "language: eng\npieces:\n  - number: 1\n    title: First poem\n"
-    with: "language: eng\nlanguage: eng\npieces:\n  - number: 1\n    title: &poem First poem\n"
+    replace: "  th’: [the]\npieces:\n  - number: 1\n    title: First poem\n"
+    with: "  th’: [the]\nlanguage: eng\npieces:\n  - number: 1\n    title: &poem First poem\n"
     error: repeatedKey
     refused: "The work names language more than once in one mapping."
   - case: a merge key before a repeated key is named first
@@ -1065,8 +1244,8 @@ cases:
   - case: in a CRLF book the key repeated first is named
     fixture: book-with-listening
     breaks: "\r\n"
-    replace: "language: eng\npieces:\n  - number: 1\n    title: First poem\n"
-    with: "language: eng\nlanguage: eng\npieces:\n  - number: 1\n    title: First poem\n    title: First poem\n"
+    replace: "  th’: [the]\npieces:\n  - number: 1\n    title: First poem\n"
+    with: "  th’: [the]\nlanguage: eng\npieces:\n  - number: 1\n    title: First poem\n    title: First poem\n"
     error: repeatedKey
     refused: "The work names language more than once in one mapping."
   - case: an anchor before a syntax error is reported rather than the syntax error
@@ -1077,8 +1256,8 @@ cases:
     refused: "The work's pieces[0].title is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
   - case: a repeated key before a syntax error is reported rather than the syntax error
     fixture: book-with-listening
-    replace: "language: eng\npieces:\n"
-    with: "language: eng\nlanguage: eng\npieces: [\n"
+    replace: "  th’: [the]\npieces:\n"
+    with: "  th’: [the]\nlanguage: eng\npieces: [\n"
     error: repeatedKey
     refused: "The work names language more than once in one mapping."
   - case: a syntax error with no problem before it is refused by the parser

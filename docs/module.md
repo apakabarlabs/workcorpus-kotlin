@@ -15,8 +15,19 @@ about is read line by line. A work is written out in full: YAML anchors, aliases
 key named twice in one mapping; of several, the first in the document. These YAML
 rules hold through `decodeWork` and `decodeWorkFromBook`, which parse the YAML
 themselves, and are not applied when `Work` is decoded directly. `WorkCorpus.work` assembles a work
-from its language and the `HeldPiece` and `HeldReading` values a caller already
-holds, and validates it the same way.
+from its language, interior marks and elisions and the `HeldPiece` and `HeldReading`
+values a caller already holds, and validates it the same way.
+
+A work names how it is written, and the library holds no language of its own.
+`Work.language` is the language tag, `Work.interiorMarks` the characters that stay
+inside a word once it has begun, such as `'’-` in English verse, and `Work.elisions`
+each elided spelling the work prints with the full forms it stands for, such as
+`tatter’d` for `tattered`. The two come from the `interior_marks` and `elisions` keys
+beside `language`, and a work needs both: a work that keeps no mark inside a word
+writes `interior_marks: ""`, and one that prints no elision writes `elisions: {}`. A
+null mark text or a null full form is refused with `WorkShapeError.NullText`, naming
+the field, such as `elisions.th’[0]`; a missing key, or a value of another kind, such
+as a list of marks or elisions left null, is refused with `DocumentError`.
 
 The nested work-file format groups pieces under sections and keeps reading settings
 in one `reading` mapping:
@@ -24,6 +35,9 @@ in one `reading` mapping:
 ```yaml
 slug: poems
 language: eng
+interior_marks: "'’-"
+elisions:
+  tatter’d: [tattered]
 title: Poems
 reading:
   untouched_below: 0.001
@@ -46,6 +60,9 @@ The assembled book format supplies the resulting pieces and parts directly:
 
 ```yaml
 language: eng
+interior_marks: "'’-"
+elisions:
+  tatter’d: [tattered]
 pieces:
   - number: 1
     title: First poem

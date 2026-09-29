@@ -30,21 +30,29 @@ apart.
   is the work's own shape. A stage the work says nothing about is read line by
   line.
 - **A part**, a run of pieces the work is divided into.
+- **How the work is written**: its language, the marks that stay inside a word
+  once it has begun (`'’-` in English verse), and the full forms of each elided
+  spelling it prints (`tatter’d` for `tattered`). They arrive with the work, from
+  its `language`, `interior_marks` and `elisions` keys, since the same reading
+  serves books in other languages.
 - **What a reading is held to**: the score a word counts as difficult at and the
   bands a stage is coloured by.
 
-What it does not hold is how long a piece should be, or how many pieces a work
-has. Those belong to the work file, and a library that knew them could serve
-only one book.
+What it does not hold is how long a piece should be, how many pieces a work
+has, or which marks and elisions a language uses. Those belong to the work file,
+and a library that knew them could serve only one book.
 
 ## Use
 
-A work file names the work, its language and what a reading of it is held to,
-and files its pieces under the sections they belong to:
+A work file names the work, how it is written and what a reading of it is held
+to, and files its pieces under the sections they belong to:
 
 ```yaml
 slug: poems
 language: eng
+interior_marks: "'’-"
+elisions:
+  tatter’d: [tattered]
 title: Poems
 reading:
   untouched_below: 0.001
@@ -70,15 +78,22 @@ import fm.apakabar.workcorpus.WorkCorpus
 val work = WorkCorpus.decodeWork(yaml)
 val piece = work.pieces[0]
 val firstBlock = piece.cuts(ReadingStage.BLOCK)[0]
+val fullForms = work.elisions["tatter’d"].orEmpty()
 
 check(work.language == "eng")
+check(work.interiorMarks == "'’-")
+check(fullForms == listOf("tattered"))
 check(firstBlock == 0..1)
 ```
 
 `decodeWork` reads a work file, `decodeWorkFromBook` an assembled book, and
-`WorkCorpus.work(language, pieces, reading)` assembles values a caller already
-holds. `Work.language` is the language tag the work gives, such as `en`, `eng`
-or `en-GB`; nothing here assumes one.
+`WorkCorpus.work(language, interiorMarks, elisions, pieces, reading)` assembles
+values a caller already holds. `Work.language` is the language tag the work
+gives, such as `en`, `eng` or `en-GB`; nothing here assumes one.
+`Work.interiorMarks` is a text each character of which is a mark that stays
+inside a word, and `Work.elisions` maps each elided spelling to its full forms in
+the order written. A work needs both keys: one that keeps no mark inside a word
+writes `interior_marks: ""`, and one that prints no elision `elisions: {}`.
 
 Every number a work carries — piece numbers and identifiers, cut sizes, part
 bounds, free pieces, the difficult-word threshold — is a whole number that fits
@@ -99,7 +114,10 @@ that says what is wrong and where:
   free-piece identifier that is not such a number (`PieceIsNotNumbered`), or a
   bound not written as above (`InvalidFraction`);
 - a text the work needs left null (`NullText`), where YAML null is `null`,
-  `Null`, `NULL`, `~` or nothing, and empty text is written `""`;
+  `Null`, `NULL`, `~` or nothing, and empty text is written `""`; this includes
+  `interior_marks` and a full form of an elision, named as `elisions.th’[0]`,
+  while `elisions` or the full forms of one spelling left null are a
+  `DocumentError`;
 - a YAML anchor, alias or `<<` merge key (`YamlReference`), an explicit YAML tag
   such as `!!str 3` (`ExplicitTag`), or a key named twice in one mapping
   (`RepeatedKey`); of several of these, the one first in the document, even
@@ -135,7 +153,7 @@ repositories {
 }
 
 dependencies {
-    implementation("fm.apakabar:workcorpus-kotlin:0.5.0")
+    implementation("fm.apakabar:workcorpus-kotlin:0.6.0")
 }
 ```
 

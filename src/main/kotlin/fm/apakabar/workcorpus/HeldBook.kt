@@ -47,14 +47,16 @@ private data class OpenPart(
 )
 
 internal fun assemble(
-    language: String,
+    writing: Writing,
     pieces: List<HeldPiece>,
     reading: HeldReading,
 ): Work {
     val made = pieces.map { Piece(number = it.number, title = it.title, lines = it.lines, cutSizes = it.cutSizes) }
     WorkCorpus.validate(made)
     return Work(
-        language = language,
+        language = writing.language,
+        interiorMarks = writing.interiorMarks,
+        elisions = writing.elisions,
         pieces = made,
         parts =
             assembleParts(pieces).map {

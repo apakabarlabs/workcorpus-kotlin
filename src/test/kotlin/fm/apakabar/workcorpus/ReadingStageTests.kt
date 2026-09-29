@@ -90,7 +90,13 @@ class ReadingStageTests {
         assertEquals(
             WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = 8, lines = 14),
             assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> {
-                WorkCorpus.work(language = "eng", pieces = listOf(short), reading = reading)
+                WorkCorpus.work(
+                    language = "eng",
+                    interiorMarks = "'’-",
+                    elisions = emptyMap(),
+                    pieces = listOf(short),
+                    reading = reading,
+                )
             },
         )
     }

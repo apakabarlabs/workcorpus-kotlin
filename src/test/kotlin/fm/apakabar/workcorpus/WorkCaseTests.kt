@@ -60,12 +60,16 @@ data class WorkReadingCase(
     val bands: List<Double>? = null,
     val threshold: Int? = null,
     val language: String? = null,
+    val interiorMarks: String? = null,
+    val elisions: Map<String, List<String>>? = null,
     val cuts: Map<String, List<Int>>? = null,
     val shortTitles: List<String>? = null,
     val summaries: List<String>? = null,
 ) {
     fun check(work: Work) {
         language?.let { assertEquals(it, work.language) }
+        interiorMarks?.let { assertEquals(it, work.interiorMarks) }
+        elisions?.let { assertEquals(it, work.elisions) }
         cuts?.let { assertEquals(it, work.pieces.firstOrNull()?.cutSizes) }
         shortTitles?.let { assertEquals(it, work.parts.map { part -> part.shortTitle }) }
         summaries?.let { assertEquals(it, work.parts.map { part -> part.summary }) }

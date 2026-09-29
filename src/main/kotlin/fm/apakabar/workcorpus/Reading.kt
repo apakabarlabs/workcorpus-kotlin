@@ -83,10 +83,30 @@ private fun Node.mismatch(what: String) = WorkCorpus.DocumentError("The work's $
 
 private fun shown(place: String): String = place.ifEmpty { "top level" }
 
+internal class Writing(
+    val language: String,
+    val interiorMarks: String,
+    val elisions: Map<String, List<String>>,
+)
+
+internal fun readWriting(fields: Fields): Writing =
+    Writing(
+        language = fields["language"].text(),
+        interiorMarks = fields["interior_marks"].text(),
+        elisions =
+            fields["elisions"]
+                .fields()
+                .entries
+                .mapValues { (_, forms) -> forms.items().map { it.text() } },
+    )
+
 internal fun readWork(node: Node): Work {
     val fields = node.fields()
+    val writing = readWriting(fields)
     return Work(
-        language = fields["language"].text(),
+        language = writing.language,
+        interiorMarks = writing.interiorMarks,
+        elisions = writing.elisions,
         pieces = fields["pieces"].items().map(::readPiece),
         parts = fields["parts"].items().map(::readPart),
         free = fields["free"].items().map { it.whole() },

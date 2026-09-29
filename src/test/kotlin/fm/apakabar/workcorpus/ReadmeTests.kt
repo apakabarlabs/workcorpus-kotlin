@@ -23,8 +23,11 @@ class ReadmeTests {
         val work = WorkCorpus.decodeWork(yaml)
         val piece = work.pieces[0]
         val firstBlock = piece.cuts(ReadingStage.BLOCK)[0]
+        val fullForms = work.elisions["tatter’d"].orEmpty()
 
         check(work.language == "eng")
+        check(work.interiorMarks == "'’-")
+        check(fullForms == listOf("tattered"))
         check(firstBlock == 0..1)
     }
 
@@ -37,6 +40,8 @@ class ReadmeTests {
         val book = WorkCorpus.decodeWorkFromBook(shown[1])
         assertEquals(file.pieces.map { it.title }, book.pieces.map { it.title })
         assertEquals(file.language, book.language)
+        assertEquals(file.interiorMarks, book.interiorMarks)
+        assertEquals(file.elisions, book.elisions)
     }
 
     private companion object {
@@ -48,8 +53,11 @@ class ReadmeTests {
             val work = WorkCorpus.decodeWork(yaml)
             val piece = work.pieces[0]
             val firstBlock = piece.cuts(ReadingStage.BLOCK)[0]
+            val fullForms = work.elisions["tatter’d"].orEmpty()
 
             check(work.language == "eng")
+            check(work.interiorMarks == "'’-")
+            check(fullForms == listOf("tattered"))
             check(firstBlock == 0..1)
             """.trimIndent() + "\n"
     }

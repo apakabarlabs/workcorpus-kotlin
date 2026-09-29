@@ -15,6 +15,94 @@ a *work file*, sections holding pieces as an author writes them, as an assembled
 *book*, the flat form with `pieces`, `parts`, `stage_field` and `difficult_words`,
 or is built in code with `WorkCorpus.work` from values the app already holds.
 
+## 0.6.0
+
+### Added
+
+- `Work.interiorMarks`, the characters that stay inside a word once the word has
+  begun, such as the apostrophe in `beauty’s` and the hyphen in `self-love`. It is
+  read from the work's `interior_marks` key as one text, each character of which
+  is a mark: `"'’-"` for Shakespeare's sonnets. `""` names none.
+- `Work.elisions`, a `Map<String, List<String>>` of the shortened spellings the
+  work prints, each mapped to the full forms a speech recogniser writes for it,
+  such as `tatter’d` to `tattered`. It is read from the work's `elisions` key, a
+  mapping from a printed spelling to a list of full forms; one spelling may have
+  several, kept in the order written. `{}` names none.
+- Both come with the work rather than from a rule about English in the library,
+  so a book in another language names its own. Marks, spellings and full forms
+  are kept exactly as written: WorkCorpus only carries them. What a mark does at
+  the start or end of a word, and whether case and punctuation count when a full
+  form is compared with what was heard, is decided by the code that uses them,
+  such as `WordTokenizer` and `Elisions` in
+  [ReadAloudKit](https://github.com/apakabarlabs/readaloudkit-kotlin).
+
+### Changed
+
+- Breaking: a work file, a book and a JSON work need both keys, beside
+  `language`; `decodeWork`, `decodeWorkFromBook` and `Work.serializer()` refuse
+  one without either with `WorkCorpus.DocumentError`, such as "The work's
+  interior_marks is missing." A work with no such marks or elisions writes them
+  empty:
+
+  ```yaml
+  # 0.5
+  slug: sonnets
+  language: eng
+  title: Sonnets
+  # 0.6
+  slug: sonnets
+  language: eng
+  interior_marks: "'’-"
+  elisions:
+    tatter’d: [tattered]
+    th’: [the]
+  title: Sonnets
+  # 0.6, a work with neither
+  slug: sonnets
+  language: eng
+  interior_marks: ""
+  elisions: {}
+  title: Sonnets
+  ```
+- Breaking: `WorkCorpus.work` takes the marks and the elisions after the
+  language, since values held in code have no file to read them from:
+
+  ```kotlin
+  // 0.5
+  WorkCorpus.work(language = "eng", pieces = pieces, reading = reading)
+  // 0.6
+  WorkCorpus.work(
+      language = "eng",
+      interiorMarks = "'’-",
+      elisions = mapOf("tatter’d" to listOf("tattered"), "th’" to listOf("the")),
+      pieces = pieces,
+      reading = reading,
+  )
+  ```
+
+  Reading a work does not change, apart from the new keys the document needs:
+
+  ```kotlin
+  // 0.5 and 0.6
+  val work = WorkCorpus.decodeWork(yaml)
+  // 0.6
+  val marks = work.interiorMarks
+  val fullForms = work.elisions["tatter’d"].orEmpty()
+  ```
+- The two keys are held to the rules the other fields are. `interior_marks`
+  written as null — `null`, `~`, or nothing after the key — is refused with
+  `WorkShapeError.NullText`, naming `interior_marks`, and so is a full form
+  written as null, naming it, such as `elisions.th’[0]`. A missing key is
+  refused with `DocumentError`, and so is a value of another kind: interior marks
+  given as a list, or in JSON as a number; elisions given as null, left empty or
+  as a list; the full forms of a spelling given as one text rather than a list,
+  or as null. A spelling named twice in one YAML mapping is refused with
+  `WorkShapeError.RepeatedKey`, naming it; in one JSON object, as for any key,
+  one of its values is kept.
+- Where workcorpus-swift 0.6.0 throws Swift's `DecodingError` for these keys,
+  this library throws `WorkCorpus.DocumentError`, as it does for every other
+  field.
+
 ## 0.5.0
 
 ### Added

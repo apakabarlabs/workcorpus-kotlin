@@ -188,7 +188,7 @@ object WorkCorpus {
      * Decodes a nested work-file YAML document and validates the resulting work.
      *
      * @throws DocumentError when the document is not YAML, or a field is missing or holds
-     * another kind of value than it names.
+     * another kind of value than it names, such as `elisions` left null.
      * @throws WorkError.PieceIsNotNumbered when a piece or free-piece identifier is not a
      * whole number within 32 bits.
      * @throws WorkShapeError when a number is not a YAML integer within 32 bits, a fraction
@@ -203,7 +203,7 @@ object WorkCorpus {
      * Decodes an assembled book YAML document and validates the resulting work.
      *
      * @throws DocumentError when the document is not YAML, or a field is missing or holds
-     * another kind of value than it names.
+     * another kind of value than it names, such as `elisions` left null.
      * @throws WorkShapeError when a number is not a YAML integer within 32 bits, a fraction
      * is not written in plain digits, a text is null, a key is repeated, a value is written
      * with a YAML anchor, alias or merge key, a piece's cuts do not divide its lines, or the
@@ -216,6 +216,10 @@ object WorkCorpus {
      * Assembles held values into a work and validates its complete shape.
      *
      * @param language The language the work names itself as written in.
+     * @param interiorMarks The characters that stay inside a word once it has begun, such
+     * as `"'’-"`; `""` for none.
+     * @param elisions Each elided spelling the work prints, mapped to the full forms it
+     * stands for, such as `mapOf("tatter’d" to listOf("tattered"))`; `emptyMap()` for none.
      * @param pieces The pieces in reading order, each with the part it is filed under.
      * @param reading What a reading of the work is held to.
      * @throws WorkShapeError when a piece's cuts do not divide its lines, or the parts, free
@@ -224,9 +228,11 @@ object WorkCorpus {
      */
     fun work(
         language: String,
+        interiorMarks: String,
+        elisions: Map<String, List<String>>,
         pieces: List<HeldPiece>,
         reading: HeldReading,
-    ): Work = validated(assemble(language, pieces, reading))
+    ): Work = validated(assemble(Writing(language, interiorMarks, elisions), pieces, reading))
 
     private fun validated(work: Work): Work {
         validate(work.pieces)

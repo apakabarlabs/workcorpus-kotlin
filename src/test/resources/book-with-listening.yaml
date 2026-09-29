@@ -1,4 +1,8 @@
 language: eng
+interior_marks: "'’-"
+elisions:
+  tatter’d: [tattered]
+  th’: [the]
 pieces:
   - number: 1
     title: First poem

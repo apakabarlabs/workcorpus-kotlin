@@ -1,6 +1,7 @@
 package fm.apakabar.workcorpus
 
 import com.charleskorn.kaml.Yaml
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -36,6 +37,43 @@ class WorkTests {
         assertNotEquals(Fixtures.text("book-with-listening"), book)
         val error = assertFailsWith<WorkCorpus.DocumentError> { WorkCorpus.decodeWorkFromBook(book) }
         assertTrue("language" in error.message.orEmpty(), error.message)
+    }
+
+    @Test
+    fun `a book that leaves out the marks inside a word or its elisions is refused, naming the key`() {
+        for ((left, key) in listOf("interior_marks: \"'’-\"\n" to "interior_marks", ELISIONS to "elisions")) {
+            val book = Fixtures.text("book-with-listening").replace(left, "")
+
+            assertNotEquals(Fixtures.text("book-with-listening"), book)
+            val error = assertFailsWith<WorkCorpus.DocumentError> { WorkCorpus.decodeWorkFromBook(book) }
+            assertEquals("The work's $key is missing.", error.message)
+        }
+    }
+
+    @Test
+    fun `a book whose marks or elisions are not the kind of value they hold is refused there`() {
+        val wrongs =
+            listOf(
+                Triple("interior_marks: \"'’-\"\n", "interior_marks: [\"'\"]\n", "interior_marks is not text"),
+                Triple(ELISIONS, "elisions:\n  - th’\n", "elisions is not a mapping"),
+                Triple(ELISIONS, "elisions: null\n", "elisions is not a mapping"),
+                Triple("  th’: [the]\n", "  th’: the\n", "elisions.th’ is not a list"),
+            )
+        for ((written, wrong, said) in wrongs) {
+            val book = Fixtures.text("book-with-listening").replace(written, wrong)
+
+            assertNotEquals(Fixtures.text("book-with-listening"), book)
+            val error = assertFailsWith<WorkCorpus.DocumentError> { WorkCorpus.decodeWorkFromBook(book) }
+            assertEquals("The work's $said.", error.message)
+        }
+    }
+
+    @Test
+    fun `a JSON work whose elisions are null is refused, naming the key`() {
+        val json = """{"language": "eng", "interior_marks": "", "elisions": null}"""
+
+        val error = assertFailsWith<WorkCorpus.DocumentError> { Json.decodeFromString(Work.serializer(), json) }
+        assertEquals("The work's elisions is not a mapping.", error.message)
     }
 
     @Test
@@ -76,11 +114,17 @@ class WorkTests {
             }
         return Work(
             language = "eng",
+            interiorMarks = "'’-",
+            elisions = emptyMap(),
             pieces = pieces,
             parts = listOf(Part(title = "The work", summary = "", first = 1, last = pieces.size)),
             free = free,
             stageField = StageFieldScale(untouchedBelow = 0.001, begunBelow = 0.5, mostBelow = 1.0),
             difficultWords = DifficultWordsConfiguration(scoreThreshold = threshold),
         )
+    }
+
+    private companion object {
+        const val ELISIONS = "elisions:\n  tatter’d: [tattered]\n  th’: [the]\n"
     }
 }

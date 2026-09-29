@@ -42,9 +42,11 @@ class HeldBookTests {
             ),
         )
 
+    private val writing = Writing(language = "eng", interiorMarks = "'’-", elisions = emptyMap())
+
     @Test
     fun `the pieces come out numbered and in the order they are held`() {
-        val work = assemble("eng", pieces, reading)
+        val work = assemble(writing, pieces, reading)
 
         assertEquals(listOf(1, 2, 3), work.pieces.map { it.number })
         assertEquals(listOf("When forty winters shall besiege thy brow,"), work.pieces[1].lines)
@@ -53,7 +55,7 @@ class HeldBookTests {
 
     @Test
     fun `a part covers the pieces filed under it and keeps its two names`() {
-        val work = assemble("eng", pieces, reading)
+        val work = assemble(writing, pieces, reading)
 
         assertEquals(listOf("The Procreation Sonnets", "The Fair Youth"), work.parts.map { it.title })
         assertEquals("The Procreation", work.parts[0].shortTitle)
@@ -64,7 +66,7 @@ class HeldBookTests {
 
     @Test
     fun `the reading thresholds come off the reading it was given`() {
-        val work = assemble("eng", pieces, reading)
+        val work = assemble(writing, pieces, reading)
 
         assertEquals(listOf(1, 2), work.free)
         assertEquals(StageFieldScale.Band.UNTOUCHED, work.stageField.band(0.0005))
@@ -84,7 +86,7 @@ class HeldBookTests {
                     partSummary = "Marry, and let your beauty outlive you.",
                 )
 
-        val work = assemble("eng", returning, reading)
+        val work = assemble(writing, returning, reading)
 
         assertEquals(listOf(1..2, 3..3, 4..4), work.parts.map { it.pieces })
     }
@@ -93,15 +95,61 @@ class HeldBookTests {
     fun `a work whose pieces are out of order is refused`() {
         val outOfOrder = listOf(pieces[1], pieces[0], pieces[2])
 
-        val error = assertFailsWith<WorkCorpus.CorpusError> { WorkCorpus.work("eng", outOfOrder, reading) }
+        val error =
+            assertFailsWith<WorkCorpus.CorpusError> {
+                WorkCorpus.work(
+                    language = "eng",
+                    interiorMarks = "'’-",
+                    elisions = emptyMap(),
+                    pieces = outOfOrder,
+                    reading = reading,
+                )
+            }
         assertEquals(WorkCorpus.CorpusError.OutOfOrder(expected = 1, found = 2), error)
     }
 
     @Test
     fun `the language is the one the work was held with, whatever it is`() {
-        val work = WorkCorpus.work(language = "srp", pieces = pieces, reading = reading)
+        val work =
+            WorkCorpus.work(
+                language = "srp",
+                interiorMarks = "-",
+                elisions = emptyMap(),
+                pieces = pieces,
+                reading = reading,
+            )
 
         assertEquals("srp", work.language)
+    }
+
+    @Test
+    fun `the marks inside a word and the elisions are the ones the work was held with`() {
+        val work =
+            WorkCorpus.work(
+                language = "eng",
+                interiorMarks = "'’-",
+                elisions = mapOf("tatter’d" to listOf("tattered"), "th’" to listOf("the", "thee")),
+                pieces = pieces,
+                reading = reading,
+            )
+
+        assertEquals("'’-", work.interiorMarks)
+        assertEquals(mapOf("tatter’d" to listOf("tattered"), "th’" to listOf("the", "thee")), work.elisions)
+    }
+
+    @Test
+    fun `a work held with no marks inside a word and no elisions is read as such`() {
+        val work =
+            WorkCorpus.work(
+                language = "eng",
+                interiorMarks = "",
+                elisions = emptyMap(),
+                pieces = pieces,
+                reading = reading,
+            )
+
+        assertEquals("", work.interiorMarks)
+        assertEquals(emptyMap(), work.elisions)
     }
 
     @Test
@@ -109,7 +157,13 @@ class HeldBookTests {
         assertEquals(
             WorkCorpus.WorkShapeError.InvalidLanguage(" "),
             assertFailsWith<WorkCorpus.WorkShapeError.InvalidLanguage> {
-                WorkCorpus.work(language = " ", pieces = pieces, reading = reading)
+                WorkCorpus.work(
+                    language = " ",
+                    interiorMarks = "'’-",
+                    elisions = emptyMap(),
+                    pieces = pieces,
+                    reading = reading,
+                )
             },
         )
     }

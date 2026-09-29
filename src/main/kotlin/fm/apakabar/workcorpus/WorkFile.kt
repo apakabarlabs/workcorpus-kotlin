@@ -18,7 +18,7 @@ private class WorkPiece(
 internal fun assembleWork(yaml: String): Work {
     val work = parseYaml(yaml).fields()
     work["slug"].text()
-    val language = work["language"].text()
+    val writing = readWriting(work)
     work["title"].text()
     val reading = work["reading"].fields()
     val untouchedBelow = reading["untouched_below"].fraction()
@@ -42,7 +42,7 @@ internal fun assembleWork(yaml: String): Work {
             }
         }
     return assemble(
-        language = language,
+        writing = writing,
         pieces = pieces,
         reading =
             HeldReading(

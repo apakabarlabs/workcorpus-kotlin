@@ -29,6 +29,7 @@ class LargeWorkTests {
             append("free: [1]\n")
             append("stage_field:\n  untouched_below: 0.001\n  begun_below: 0.5\n  most_below: 1.0\n")
             append("difficult_words:\n  score_threshold: 3\n")
+            append("interior_marks: \"'’-\"\nelisions: {}\n")
         }
 
     @Test

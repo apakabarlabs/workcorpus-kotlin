@@ -3,6 +3,7 @@ package fm.apakabar.workcorpus
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
@@ -49,6 +50,15 @@ import kotlinx.serialization.encoding.encodeStructure
  * @property language Language the work is written in, as the work names it: a language
  * tag such as `en`, `eng` or `en-GB`. It arrives with the work rather than being
  * assumed, because the same reading mechanics carry works in other languages.
+ * @property interiorMarks Characters that stay inside a word once the word has begun, as
+ * the work's script uses them, such as an apostrophe or a hyphen: `"'’-"` in English verse.
+ * Each character of the text is one such mark, and `""` names none. Like the language, it
+ * arrives with the work, from its `interior_marks` key: which marks join a word belongs to
+ * the writing the work is printed in.
+ * @property elisions The elided spellings the work prints, each mapped to the full forms
+ * it stands for in the order written, such as `tatter’d` to `[tattered]`; empty for a work
+ * that prints none. Read from the work's `elisions` key, a mapping from a spelling to a list
+ * of full forms; spellings and full forms are kept as the work writes them.
  * @property pieces Reading pieces, expected to be numbered from one and ordered by number.
  * @property parts Parts, expected to cover the pieces consecutively and exactly once.
  * @property free Piece numbers intended to be available without purchase.
@@ -59,12 +69,15 @@ import kotlinx.serialization.encoding.encodeStructure
  * [StageFieldScale] and [DifficultWordsConfiguration] throw them, and any of their shape
  * errors.
  * @throws WorkCorpus.DocumentError when a decoded work misses a field or a field holds another
- * kind of value than it names.
+ * kind of value than it names, such as `interior_marks` given as a list, or `elisions` or the
+ * full forms of one spelling given as null or as text rather than a mapping or a list.
  */
 @Serializable(with = WorkSerializer::class)
 @ConsistentCopyVisibility
 data class Work internal constructor(
     val language: String,
+    val interiorMarks: String,
+    val elisions: Map<String, List<String>>,
     val pieces: List<Piece>,
     val parts: List<Part>,
     val free: List<Int>,
@@ -76,10 +89,13 @@ internal object WorkSerializer : KSerializer<Work> {
     private val pieces = ListSerializer(PieceSerializer)
     private val parts = ListSerializer(Part.Serializer)
     private val free = ListSerializer(Int.serializer())
+    private val elisions = MapSerializer(String.serializer(), ListSerializer(String.serializer()))
 
     override val descriptor: SerialDescriptor =
         buildClassSerialDescriptor("fm.apakabar.workcorpus.Work") {
             element("language", String.serializer().descriptor)
+            element("interior_marks", String.serializer().descriptor)
+            element("elisions", elisions.descriptor)
             element("pieces", pieces.descriptor)
             element("parts", parts.descriptor)
             element("free", free.descriptor)
@@ -94,11 +110,13 @@ internal object WorkSerializer : KSerializer<Work> {
         value: Work,
     ) = encoder.encodeStructure(descriptor) {
         encodeStringElement(descriptor, 0, value.language)
-        encodeSerializableElement(descriptor, 1, pieces, value.pieces)
-        encodeSerializableElement(descriptor, 2, parts, value.parts)
-        encodeSerializableElement(descriptor, 3, free, value.free)
-        encodeSerializableElement(descriptor, 4, StageFieldScaleSerializer, value.stageField)
-        encodeSerializableElement(descriptor, 5, DifficultWordsConfigurationSerializer, value.difficultWords)
+        encodeStringElement(descriptor, 1, value.interiorMarks)
+        encodeSerializableElement(descriptor, 2, elisions, value.elisions)
+        encodeSerializableElement(descriptor, 3, pieces, value.pieces)
+        encodeSerializableElement(descriptor, 4, parts, value.parts)
+        encodeSerializableElement(descriptor, 5, free, value.free)
+        encodeSerializableElement(descriptor, 6, StageFieldScaleSerializer, value.stageField)
+        encodeSerializableElement(descriptor, 7, DifficultWordsConfigurationSerializer, value.difficultWords)
     }
 }
 

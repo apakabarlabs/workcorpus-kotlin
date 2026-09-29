@@ -1,7 +1,13 @@
 package fm.apakabar.workcorpus
 
-import kotlinx.serialization.SerialName
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.encodeStructure
 
 /**
  * Divides a stage-completion fraction into display bands.
@@ -12,11 +18,11 @@ import kotlinx.serialization.Serializable
  * @property begunBelow Upper bound of the begun band.
  * @property mostBelow Upper bound of the mostly-complete band.
  */
-@Serializable
+@Serializable(with = StageFieldScaleSerializer::class)
 data class StageFieldScale(
-    @SerialName("untouched_below") val untouchedBelow: Double,
-    @SerialName("begun_below") val begunBelow: Double,
-    @SerialName("most_below") val mostBelow: Double,
+    val untouchedBelow: Double,
+    val begunBelow: Double,
+    val mostBelow: Double,
 ) {
     /** Returns the display band containing [fraction]. */
     fun band(fraction: Double): Band =
@@ -40,5 +46,25 @@ data class StageFieldScale(
 
         /** At or above the third bound. */
         WHOLE,
+    }
+}
+
+internal object StageFieldScaleSerializer : KSerializer<StageFieldScale> {
+    override val descriptor: SerialDescriptor =
+        buildClassSerialDescriptor("fm.apakabar.workcorpus.StageFieldScale") {
+            element("untouched_below", Double.serializer().descriptor)
+            element("begun_below", Double.serializer().descriptor)
+            element("most_below", Double.serializer().descriptor)
+        }
+
+    override fun deserialize(decoder: Decoder): StageFieldScale = readStageFieldScale(treeOf(decoder))
+
+    override fun serialize(
+        encoder: Encoder,
+        value: StageFieldScale,
+    ) = encoder.encodeStructure(descriptor) {
+        encodeDoubleElement(descriptor, 0, value.untouchedBelow)
+        encodeDoubleElement(descriptor, 1, value.begunBelow)
+        encodeDoubleElement(descriptor, 2, value.mostBelow)
     }
 }

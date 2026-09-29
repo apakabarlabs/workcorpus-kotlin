@@ -1,24 +1,15 @@
 package fm.apakabar.workcorpus
 
-import com.charleskorn.kaml.YamlException
-import com.charleskorn.kaml.YamlInput
-import com.charleskorn.kaml.YamlScalar
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.KeepGeneratedSerializer
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
-import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.SerialKind
-import kotlinx.serialization.descriptors.buildSerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.encoding.encodeStructure
 
 /**
  * What a reader reads in one sitting: a sonnet, a stanza, a scene.
@@ -37,16 +28,11 @@ import kotlinx.serialization.json.JsonDecoder
  * divide the lines, or naming the field when a number decoded from YAML or JSON is not
  * an integer within 32 bits.
  */
-@OptIn(ExperimentalSerializationApi::class)
-@KeepGeneratedSerializer
 @Serializable(with = PieceSerializer::class)
 data class Piece(
-    @Serializable(with = WholeNumberSerializer::class)
     val number: Int,
     val title: String,
     val lines: List<String>,
-    @SerialName("cuts")
-    @Serializable(with = CutsSerializer::class)
     val cutSizes: Map<String, List<Int>> = emptyMap(),
 ) {
     init {
@@ -78,53 +64,27 @@ data class Piece(
     }
 }
 
-@OptIn(ExperimentalSerializationApi::class)
-internal object PieceSerializer : NumberCheckedSerializer<Piece>(Piece.generatedSerializer())
+internal object PieceSerializer : KSerializer<Piece> {
+    private val lines = ListSerializer(String.serializer())
+    private val cuts = MapSerializer(String.serializer(), ListSerializer(Int.serializer()))
 
-internal object WholeNumberSerializer : KSerializer<Int> {
-    @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
     override val descriptor: SerialDescriptor =
-        buildSerialDescriptor("fm.apakabar.workcorpus.WholeNumber", SerialKind.CONTEXTUAL)
+        buildClassSerialDescriptor("fm.apakabar.workcorpus.Piece") {
+            element("number", Int.serializer().descriptor)
+            element("title", String.serializer().descriptor)
+            element("lines", lines.descriptor)
+            element("cuts", cuts.descriptor, isOptional = true)
+        }
 
-    override fun deserialize(decoder: Decoder): Int {
-        if (decoder is JsonDecoder) {
-            return checkNotNull(wholeNumber(decoder.decodeJsonElement())) {
-                "A JSON number reached the work unchecked by the serializer of the type holding it."
-            }
-        }
-        if (decoder !is YamlInput) return decoder.decodeInt()
-        val place = place(decoder.node.path.segments)
-        val scalar = decoder.node as? YamlScalar
-        if (scalar == null || !scalar.plain || !isPlainDecimal(scalar.content)) {
-            throw WorkCorpus.WorkShapeError.InvalidNumber(place)
-        }
-        return try {
-            decoder.decodeInt()
-        } catch (failure: YamlException) {
-            throw WorkCorpus.WorkShapeError.InvalidNumber(place, failure)
-        }
-    }
+    override fun deserialize(decoder: Decoder): Piece = readPiece(treeOf(decoder))
 
     override fun serialize(
         encoder: Encoder,
-        value: Int,
-    ) = encoder.encodeInt(value)
-
-    internal fun isPlainDecimal(written: String): Boolean {
-        val digits = written.removePrefix("-")
-        return digits.isNotEmpty() && digits.all { it in '0'..'9' } && (digits[0] != '0' || written == "0")
+        value: Piece,
+    ) = encoder.encodeStructure(descriptor) {
+        encodeIntElement(descriptor, 0, value.number)
+        encodeStringElement(descriptor, 1, value.title)
+        encodeSerializableElement(descriptor, 2, lines, value.lines)
+        if (value.cutSizes.isNotEmpty()) encodeSerializableElement(descriptor, 3, cuts, value.cutSizes)
     }
-}
-
-internal object CutsSerializer : KSerializer<Map<String, List<Int>>> {
-    private val table = MapSerializer(String.serializer(), ListSerializer(WholeNumberSerializer))
-
-    override val descriptor: SerialDescriptor = table.nullable.descriptor
-
-    override fun deserialize(decoder: Decoder): Map<String, List<Int>> = decoder.decodeSerializableValue(table.nullable) ?: emptyMap()
-
-    override fun serialize(
-        encoder: Encoder,
-        value: Map<String, List<Int>>,
-    ) = encoder.encodeSerializableValue(table, value)
 }

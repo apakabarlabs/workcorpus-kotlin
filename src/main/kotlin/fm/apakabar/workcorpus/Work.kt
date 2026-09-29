@@ -1,16 +1,22 @@
 package fm.apakabar.workcorpus
 
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.KeepGeneratedSerializer
-import kotlinx.serialization.SerialName
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.encodeStructure
 
 /**
  * A reading work and the configuration used to present it.
  *
  * Decode through [WorkCorpus.decodeWork] or [WorkCorpus.decodeWorkFromBook] to validate
- * the complete work before use. Decoding this type directly with [serializer] does not
- * validate relationships between its fields.
+ * the complete work before use. Decoding this type directly with [serializer], from YAML
+ * through kaml or from JSON through kotlinx.serialization, reads it by the same rules
+ * but does not validate relationships between its fields.
  *
  * Every number a work carries, from piece numbers to cut sizes, is a YAML integer that
  * fits in 32 bits, written as plain decimal digits: `0`, or digits that do not start
@@ -20,7 +26,8 @@ import kotlinx.serialization.Serializable
  *
  * Decoded from JSON, a number is a JSON number whose value is a whole number that fits
  * in 32 bits, so `5` and `5.0` both read as 5. A string such as `"5"`, a boolean, null,
- * a fraction, a value past 32 bits and `-0` are refused as in YAML.
+ * a fraction, a value past 32 bits and `-0` are refused as in YAML. The value is taken
+ * exactly as written, so `5.000000000000000001` is a fraction.
  *
  * A work is written out in full. A YAML anchor, an alias or a `<<` merge key, quoted or
  * not, is refused with [WorkCorpus.WorkShapeError.YamlReference], since YAML readers do
@@ -35,24 +42,46 @@ import kotlinx.serialization.Serializable
  * @property stageField Thresholds used to display stage progress.
  * @property difficultWords Threshold used to identify difficult words.
  */
-@OptIn(ExperimentalSerializationApi::class)
-@KeepGeneratedSerializer
 @Serializable(with = WorkSerializer::class)
 @ConsistentCopyVisibility
 data class Work internal constructor(
     val language: String,
     val pieces: List<Piece>,
     val parts: List<Part>,
-    val free: List<
-        @Serializable(with = WholeNumberSerializer::class)
-        Int,
-    >,
-    @SerialName("stage_field") val stageField: StageFieldScale,
-    @SerialName("difficult_words") val difficultWords: DifficultWordsConfiguration,
+    val free: List<Int>,
+    val stageField: StageFieldScale,
+    val difficultWords: DifficultWordsConfiguration,
 )
 
-@OptIn(ExperimentalSerializationApi::class)
-internal object WorkSerializer : NumberCheckedSerializer<Work>(Work.generatedSerializer())
+internal object WorkSerializer : KSerializer<Work> {
+    private val pieces = ListSerializer(PieceSerializer)
+    private val parts = ListSerializer(Part.Serializer)
+    private val free = ListSerializer(Int.serializer())
+
+    override val descriptor: SerialDescriptor =
+        buildClassSerialDescriptor("fm.apakabar.workcorpus.Work") {
+            element("language", String.serializer().descriptor)
+            element("pieces", pieces.descriptor)
+            element("parts", parts.descriptor)
+            element("free", free.descriptor)
+            element("stage_field", StageFieldScaleSerializer.descriptor)
+            element("difficult_words", DifficultWordsConfigurationSerializer.descriptor)
+        }
+
+    override fun deserialize(decoder: Decoder): Work = readWork(treeOf(decoder))
+
+    override fun serialize(
+        encoder: Encoder,
+        value: Work,
+    ) = encoder.encodeStructure(descriptor) {
+        encodeStringElement(descriptor, 0, value.language)
+        encodeSerializableElement(descriptor, 1, pieces, value.pieces)
+        encodeSerializableElement(descriptor, 2, parts, value.parts)
+        encodeSerializableElement(descriptor, 3, free, value.free)
+        encodeSerializableElement(descriptor, 4, StageFieldScaleSerializer, value.stageField)
+        encodeSerializableElement(descriptor, 5, DifficultWordsConfigurationSerializer, value.difficultWords)
+    }
+}
 
 /**
  * Configuration for classifying repeatedly missed words.
@@ -61,15 +90,23 @@ internal object WorkSerializer : NumberCheckedSerializer<Work>(Work.generatedSer
  *
  * @property scoreThreshold Minimum accumulated score at which a word is difficult.
  */
-@OptIn(ExperimentalSerializationApi::class)
-@KeepGeneratedSerializer
 @Serializable(with = DifficultWordsConfigurationSerializer::class)
 data class DifficultWordsConfiguration(
-    @SerialName("score_threshold")
-    @Serializable(with = WholeNumberSerializer::class)
     val scoreThreshold: Int,
 )
 
-@OptIn(ExperimentalSerializationApi::class)
-internal object DifficultWordsConfigurationSerializer :
-    NumberCheckedSerializer<DifficultWordsConfiguration>(DifficultWordsConfiguration.generatedSerializer())
+internal object DifficultWordsConfigurationSerializer : KSerializer<DifficultWordsConfiguration> {
+    override val descriptor: SerialDescriptor =
+        buildClassSerialDescriptor("fm.apakabar.workcorpus.DifficultWordsConfiguration") {
+            element("score_threshold", Int.serializer().descriptor)
+        }
+
+    override fun deserialize(decoder: Decoder): DifficultWordsConfiguration = readDifficultWords(treeOf(decoder))
+
+    override fun serialize(
+        encoder: Encoder,
+        value: DifficultWordsConfiguration,
+    ) = encoder.encodeStructure(descriptor) {
+        encodeIntElement(descriptor, 0, value.scoreThreshold)
+    }
+}

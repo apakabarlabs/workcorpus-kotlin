@@ -20,16 +20,22 @@
   mapping in place of the number, or a number written with `+`, a leading zero, as
   `-0`, with underscores, `0x`/`0o`/`0b` or as sexagesimal `1:30` is refused with
   `WorkShapeError.InvalidNumber`, naming the field, such as
-  `pieces[0].cuts.block[1]`, and keeping the parser's own error as its cause when
-  there is one. The piece and free-piece identifiers of a work file are held to the
-  same writing and the same 32 bits, and one that is not, such as `'+3'`, `'03'`
-  or `'-0'`, is refused with `WorkError.PieceIsNotNumbered`.
-- A `Work`, `Piece`, `Part` or `DifficultWordsConfiguration` decoded from JSON with
-  kotlinx.serialization holds its numbers to their value, as the lead's `Decodable`
-  does: a JSON number that is a whole number within 32 bits reads, so `5.0` reads as
-  5, while a string such as `"5"`, a boolean, null, a fraction, a value past 32 bits
-  or `-0` is refused with `WorkShapeError.InvalidNumber`, naming the field. The
-  library depends on `kotlinx-serialization-json` for this.
+  `pieces[0].cuts.block[1]`. The piece and free-piece identifiers of a work file
+  are held to the same writing and the same 32 bits, and one that is not, such as
+  `'+3'`, `'03'` or `'-0'`, is refused with `WorkError.PieceIsNotNumbered`.
+- A document that cannot be read as a work at all — not YAML or JSON, a field
+  missing, or a list where text belongs — is refused with
+  `WorkCorpus.DocumentError`, naming the field. No error of the YAML or JSON
+  parser reaches a caller except as the cause of one of the library's own.
+- `Work`, `Piece`, `Part`, `StageFieldScale` and `DifficultWordsConfiguration`
+  are `@Serializable` with serializers of their own on the stable
+  kotlinx.serialization API. Decoded from YAML through kaml or from JSON through
+  kotlinx.serialization, they read the document's tree themselves and hold it to
+  the rules above, whatever `Yaml` or `Json` configuration decodes them. A JSON
+  number is held to its value, as the lead's `Decodable` holds it: a whole number
+  within 32 bits reads, so `5.0` reads as 5, while a string such as `"5"`, a
+  boolean, null, a fraction, a value past 32 bits or `-0` is refused with
+  `WorkShapeError.InvalidNumber`, naming the field.
 - A work file or book that gives a value a YAML anchor, takes one from an alias,
   or merges a mapping in with a `<<` key, quoted or not, is refused with
   `WorkShapeError.YamlReference`, naming the anchored value or the merging

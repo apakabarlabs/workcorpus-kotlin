@@ -99,6 +99,13 @@ dependencies {
 
 The API is not settled before 1.0 and may change between minor versions.
 
+The library reads YAML with [kotaml](https://github.com/Heapy/kotaml)
+(`io.heapy.kotaml:kotaml`), a fork of kaml that keeps kaml's package,
+`com.charleskorn.kaml`. A project that also depends on kaml itself
+(`com.charleskorn.kaml:kaml`) gets two sets of the same classes on its classpath;
+keep one of the two, or exclude one from the other's dependency. Neither appears
+in this library's public API.
+
 ## Documentation
 
 The [Dokka API reference](https://apakabarlabs.github.io/workcorpus-kotlin/) is generated from the public Kotlin API and deployed by GitHub Actions.

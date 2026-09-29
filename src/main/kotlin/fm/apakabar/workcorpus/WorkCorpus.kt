@@ -20,6 +20,19 @@ object WorkCorpus {
         final override fun toString(): String = "${javaClass.name}: $message"
     }
 
+    /**
+     * The document cannot be read as a work at all: it is not YAML or JSON, a field a work
+     * needs is missing, or a field holds another kind of value than the one it names,
+     * such as a list where text belongs. The message names the field; the parser's own
+     * error, when there is one, is kept as the cause.
+     */
+    class DocumentError internal constructor(
+        message: String,
+        cause: Throwable? = null,
+    ) : Exception(message, cause) {
+        override fun toString(): String = "${javaClass.name}: $message"
+    }
+
     /** A work-file piece identifier is not an integer. */
     sealed class WorkError(
         message: String,
@@ -62,16 +75,11 @@ object WorkCorpus {
         /**
          * A field that holds a number holds something else: a quoted string, a float, a
          * boolean, null, a list or a mapping, an integer that does not fit in 32 bits, or
-         * one not written as plain decimal digits. The parser's own error, when there is
-         * one, is kept as the cause.
+         * one not written as plain decimal digits.
          */
         data class InvalidNumber(
             val place: String,
-        ) : WorkShapeError("The work's $place is not a whole number that fits in 32 bits.") {
-            internal constructor(place: String, cause: Throwable) : this(place) {
-                initCause(cause)
-            }
-        }
+        ) : WorkShapeError("The work's $place is not a whole number that fits in 32 bits.")
 
         data class InvalidLanguage(
             val value: String,
@@ -148,8 +156,8 @@ object WorkCorpus {
     /**
      * Decodes a nested work-file YAML document and validates the resulting work.
      *
-     * @throws com.charleskorn.kaml.YamlException when the document is not YAML, or a field
-     * is missing or is not text where text belongs.
+     * @throws DocumentError when the document is not YAML, or a field is missing or holds
+     * another kind of value than it names.
      * @throws WorkError.PieceIsNotNumbered when a piece or free-piece identifier is not a
      * whole number within 32 bits.
      * @throws WorkShapeError when a number is not a YAML integer within 32 bits, a value is
@@ -163,15 +171,15 @@ object WorkCorpus {
     /**
      * Decodes an assembled book YAML document and validates the resulting work.
      *
-     * @throws com.charleskorn.kaml.YamlException when the document is not YAML, or a field
-     * is missing or is not text where text belongs.
+     * @throws DocumentError when the document is not YAML, or a field is missing or holds
+     * another kind of value than it names.
      * @throws WorkShapeError when a number is not a YAML integer within 32 bits, a value is
      * written with a YAML anchor, alias or merge key, a piece's cuts do not divide its
      * lines, or the parts, free pieces, thresholds or language are not shaped as a work's
      * must be.
      * @throws CorpusError.OutOfOrder when the pieces are not numbered from one in order.
      */
-    fun decodeWorkFromBook(yaml: String): Work = validated(decodeYaml(Work.serializer(), yaml))
+    fun decodeWorkFromBook(yaml: String): Work = validated(readWork(parseYaml(yaml)))
 
     /**
      * Assembles held values into a work and validates its complete shape.

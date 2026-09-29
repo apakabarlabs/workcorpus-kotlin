@@ -1,6 +1,6 @@
 package fm.apakabar.workcorpus
 
-import com.charleskorn.kaml.YamlException
+import com.charleskorn.kaml.Yaml
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
 class WorkTests {
     @Test
     fun `configuration is validated from the YAML model itself`() {
-        val book = workYaml.decodeFromString(Work.serializer(), Fixtures.text("book-with-listening"))
+        val book = Yaml.default.decodeFromString(Work.serializer(), Fixtures.text("book-with-listening"))
 
         WorkCorpus.validateConfiguration(book)
     }
@@ -85,7 +85,7 @@ class WorkTests {
         val book = Fixtures.text("book-with-listening").replace("language: eng\n", "")
 
         assertNotEquals(Fixtures.text("book-with-listening"), book)
-        val error = assertFailsWith<YamlException> { WorkCorpus.decodeWorkFromBook(book) }
+        val error = assertFailsWith<WorkCorpus.DocumentError> { WorkCorpus.decodeWorkFromBook(book) }
         assertTrue("language" in error.message.orEmpty(), error.message)
     }
 
@@ -179,12 +179,11 @@ class WorkTests {
     }
 
     @Test
-    fun `what is wrong with a number is said naming the field, with the parser's reason kept`() {
+    fun `what is wrong with a number is said naming the field`() {
         val book = Fixtures.text("book-with-listening").replace("free: [1]\n", "free: [2147483648]\n")
         val error = assertFailsWith<WorkCorpus.WorkShapeError.InvalidNumber> { WorkCorpus.decodeWorkFromBook(book) }
 
         assertEquals("The work's free[0] is not a whole number that fits in 32 bits.", error.message)
-        assertTrue(error.cause is YamlException)
     }
 
     @Test

@@ -1,103 +1,34 @@
 package fm.apakabar.workcorpus
 
-import com.charleskorn.kaml.ForbiddenAnchorOrAliasException
-import com.charleskorn.kaml.Yaml
-import com.charleskorn.kaml.YamlConfiguration
-import com.charleskorn.kaml.YamlList
-import com.charleskorn.kaml.YamlMap
-import com.charleskorn.kaml.YamlNode
-import com.charleskorn.kaml.YamlPathSegment
-import com.charleskorn.kaml.YamlTaggedNode
-import kotlinx.serialization.DeserializationStrategy
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
-internal val workYaml = Yaml(configuration = YamlConfiguration(strictMode = false))
-
-internal fun <T> decodeYaml(
-    deserializer: DeserializationStrategy<T>,
-    yaml: String,
-): T {
-    val root =
-        try {
-            workYaml.parseToYamlNode(yaml)
-        } catch (reference: ForbiddenAnchorOrAliasException) {
-            throw WorkCorpus.WorkShapeError.YamlReference(referencePlace(reference.path.segments), reference)
-        }
-    refuseMerges(root)
-    return workYaml.decodeFromYamlNode(deserializer, root)
-}
-
-private fun refuseMerges(node: YamlNode) {
-    val segments = node.path.segments
-    val merge = segments.indexOfFirst { it is YamlPathSegment.Merge }
-    if (merge >= 0) throw WorkCorpus.WorkShapeError.YamlReference(referencePlace(segments.take(merge)))
-    when (node) {
-        is YamlMap ->
-            node.entries.forEach { (key, value) ->
-                refuseMerges(key)
-                refuseMerges(value)
-            }
-        is YamlList -> node.items.forEach(::refuseMerges)
-        is YamlTaggedNode -> refuseMerges(node.innerNode)
-        else -> Unit
-    }
-}
-
-private fun referencePlace(segments: List<YamlPathSegment>): String = place(segments).ifEmpty { "top level" }
-
-internal fun place(segments: List<YamlPathSegment>): String =
-    segments
-        .joinToString("") { segment ->
-            when (segment) {
-                is YamlPathSegment.ListEntry -> "[${segment.index}]"
-                is YamlPathSegment.MapElementKey -> ".${segment.key}"
-                else -> ""
-            }
-        }.removePrefix(".")
-
-@Serializable
-internal data class WorkFile(
-    val slug: String,
-    val language: String,
+private class WorkSection(
     val title: String,
-    val reading: WorkReading,
-    val sections: List<WorkSection>,
+    val short: String?,
+    val summary: String?,
+    val sections: List<WorkSection>?,
+    val pieces: List<WorkPiece>?,
 )
 
-@Serializable
-internal data class WorkReading(
-    @SerialName("untouched_below") val untouchedBelow: Double,
-    @SerialName("begun_below") val begunBelow: Double,
-    @SerialName("most_below") val mostBelow: Double,
-    @SerialName("difficult_word_score")
-    @Serializable(with = WholeNumberSerializer::class)
-    val difficultWordScore: Int,
-    val free: List<String>,
-)
-
-@Serializable
-internal data class WorkSection(
-    val title: String,
-    val short: String? = null,
-    val summary: String? = null,
-    val sections: List<WorkSection>? = null,
-    val pieces: List<WorkPiece>? = null,
-)
-
-@Serializable
-internal data class WorkPiece(
+private class WorkPiece(
     val id: String,
     val title: String,
     val lines: List<String>,
-    @Serializable(with = CutsSerializer::class)
-    val cuts: Map<String, List<Int>> = emptyMap(),
+    val cuts: Map<String, List<Int>>,
 )
 
 internal fun assembleWork(yaml: String): Work {
-    val work = decodeYaml(WorkFile.serializer(), yaml)
+    val work = parseYaml(yaml).fields()
+    work["slug"].text()
+    val language = work["language"].text()
+    work["title"].text()
+    val reading = work["reading"].fields()
+    val untouchedBelow = reading["untouched_below"].fraction()
+    val begunBelow = reading["begun_below"].fraction()
+    val mostBelow = reading["most_below"].fraction()
+    val difficultWordScore = reading["difficult_word_score"].whole()
+    val free = reading["free"].items().map { it.text() }
+    val sections = work["sections"].items().map(::readSection)
     val pieces =
-        parts(work.sections).flatMap { part ->
+        parts(sections).flatMap { part ->
             part.pieces.orEmpty().map { piece ->
                 HeldPiece(
                     number = numbered(piece.id),
@@ -111,21 +42,42 @@ internal fun assembleWork(yaml: String): Work {
             }
         }
     return assemble(
-        language = work.language,
+        language = language,
         pieces = pieces,
         reading =
             HeldReading(
-                untouchedBelow = work.reading.untouchedBelow,
-                begunBelow = work.reading.begunBelow,
-                mostBelow = work.reading.mostBelow,
-                difficultWordScore = work.reading.difficultWordScore,
-                free = work.reading.free.map(::numbered),
+                untouchedBelow = untouchedBelow,
+                begunBelow = begunBelow,
+                mostBelow = mostBelow,
+                difficultWordScore = difficultWordScore,
+                free = free.map(::numbered),
             ),
     )
 }
 
+private fun readSection(node: Node): WorkSection {
+    val fields = node.fields()
+    return WorkSection(
+        title = fields["title"].text(),
+        short = fields.optional("short")?.text(),
+        summary = fields.optional("summary")?.text(),
+        sections = fields.optional("sections")?.items()?.map(::readSection),
+        pieces = fields.optional("pieces")?.items()?.map(::readWorkPiece),
+    )
+}
+
+private fun readWorkPiece(node: Node): WorkPiece {
+    val fields = node.fields()
+    return WorkPiece(
+        id = fields["id"].text(),
+        title = fields["title"].text(),
+        lines = fields["lines"].items().map { it.text() },
+        cuts = readCuts(fields.optional("cuts")),
+    )
+}
+
 private fun numbered(id: String): Int =
-    id.takeIf(WholeNumberSerializer::isPlainDecimal)?.toIntOrNull()
+    id.takeIf(::isPlainDecimal)?.toIntOrNull()
         ?: throw WorkCorpus.WorkError.PieceIsNotNumbered(id)
 
 private fun parts(sections: List<WorkSection>): List<WorkSection> =

@@ -1,6 +1,5 @@
 package fm.apakabar.workcorpus
 
-import com.charleskorn.kaml.YamlException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -67,7 +66,7 @@ class WorkFileTests {
         val unnamed = Fixtures.work().replace("language: eng\n", "")
 
         assertNotEquals(Fixtures.work(), unnamed)
-        val error = assertFailsWith<YamlException> { WorkCorpus.decodeWork(unnamed) }
+        val error = assertFailsWith<WorkCorpus.DocumentError> { WorkCorpus.decodeWork(unnamed) }
         assertTrue("language" in error.message.orEmpty(), error.message)
     }
 
@@ -163,7 +162,7 @@ class WorkFileTests {
         val untitled = Fixtures.work().replace("        title: Sonnet 2\n", "")
 
         assertNotEquals(Fixtures.work(), untitled)
-        val error = assertFailsWith<YamlException> { WorkCorpus.decodeWork(untitled) }
+        val error = assertFailsWith<WorkCorpus.DocumentError> { WorkCorpus.decodeWork(untitled) }
         assertTrue("title" in error.message.orEmpty(), error.message)
     }
 

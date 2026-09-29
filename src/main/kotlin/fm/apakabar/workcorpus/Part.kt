@@ -1,8 +1,13 @@
 package fm.apakabar.workcorpus
 
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.KeepGeneratedSerializer
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.encodeStructure
 
 /**
  * A run of pieces a work is divided into: a group of sonnets, a chapter, an act.
@@ -17,15 +22,11 @@ import kotlinx.serialization.Serializable
  * one or later, or ends before it starts; [WorkCorpus.WorkShapeError.InvalidNumber] when
  * a bound decoded from YAML or JSON is not an integer within 32 bits.
  */
-@OptIn(ExperimentalSerializationApi::class)
-@KeepGeneratedSerializer
-@Serializable(with = PartSerializer::class)
+@Serializable(with = Part.Serializer::class)
 data class Part(
     val title: String,
     val summary: String,
-    @Serializable(with = WholeNumberSerializer::class)
     val first: Int,
-    @Serializable(with = WholeNumberSerializer::class)
     val last: Int,
     private val short: String? = null,
 ) {
@@ -44,7 +45,28 @@ data class Part(
 
     /** Reports whether a numbered piece belongs to the part. */
     fun contains(piece: Int): Boolean = piece in pieces
-}
 
-@OptIn(ExperimentalSerializationApi::class)
-internal object PartSerializer : NumberCheckedSerializer<Part>(Part.generatedSerializer())
+    internal object Serializer : KSerializer<Part> {
+        override val descriptor: SerialDescriptor =
+            buildClassSerialDescriptor("fm.apakabar.workcorpus.Part") {
+                element("title", String.serializer().descriptor)
+                element("summary", String.serializer().descriptor)
+                element("first", Int.serializer().descriptor)
+                element("last", Int.serializer().descriptor)
+                element("short", String.serializer().descriptor, isOptional = true)
+            }
+
+        override fun deserialize(decoder: Decoder): Part = readPart(treeOf(decoder))
+
+        override fun serialize(
+            encoder: Encoder,
+            value: Part,
+        ) = encoder.encodeStructure(descriptor) {
+            encodeStringElement(descriptor, 0, value.title)
+            encodeStringElement(descriptor, 1, value.summary)
+            encodeIntElement(descriptor, 2, value.first)
+            encodeIntElement(descriptor, 3, value.last)
+            value.short?.let { encodeStringElement(descriptor, 4, it) }
+        }
+    }
+}

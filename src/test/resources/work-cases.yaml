@@ -1,0 +1,26 @@
+cases:
+  - case: a cut written as -0 is refused
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [-0]\n"
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a threshold written as -0 is refused
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: -0\n"
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a part bound written as -0 is refused
+    fixture: book-with-listening
+    replace: "    first: 1\n"
+    with: "    first: -0\n"
+    refused: "The work's parts[0].first is not a whole number that fits in 32 bits."
+  - case: a threshold written as 0 is the number zero
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: 0\n"
+    refused: "The difficult-word score threshold must be positive."
+  - case: a negative threshold is a number, refused only for being below one
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: -3\n"
+    refused: "The difficult-word score threshold must be positive."

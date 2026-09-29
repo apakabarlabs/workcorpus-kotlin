@@ -52,7 +52,7 @@ class FixtureCopyTests {
         }
 
     companion object {
-        private val SHARED = listOf("book-with-listening.yaml", "work.yaml")
+        private val SHARED = listOf("book-with-listening.yaml", "work-cases.yaml", "work.yaml")
         private const val LEAD =
             "https://raw.githubusercontent.com/apakabarlabs/workcorpus-swift/main/Tests/WorkCorpusTests/Fixtures"
         private const val OK = 200

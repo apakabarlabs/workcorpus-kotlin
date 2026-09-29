@@ -11,9 +11,10 @@ import kotlinx.serialization.Serializable
  * validate relationships between its fields.
  *
  * Every number a work carries, from piece numbers to cut sizes, is a YAML integer that
- * fits in 32 bits, written as plain decimal digits: an optional `-`, and no leading
- * zero unless the number is `0`. A `+`, underscores, `0x`, `0o` or `0b` prefixes and
- * sexagesimal `1:30` are refused, so that every port reads a number the same way.
+ * fits in 32 bits, written as plain decimal digits: `0`, or digits that do not start
+ * with `0` after an optional `-`. A `+`, `-0`, underscores, `0x`, `0o` or `0b`
+ * prefixes and sexagesimal `1:30` are refused, so that every port reads a number the
+ * same way.
  *
  * @property language Language the work is written in, as the work names it: a language
  * tag such as `en`, `eng` or `en-GB`. It arrives with the work rather than being

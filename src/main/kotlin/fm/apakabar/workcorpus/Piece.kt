@@ -98,7 +98,7 @@ internal object WholeNumberSerializer : KSerializer<Int> {
 
     private fun isPlainDecimal(written: String): Boolean {
         val digits = written.removePrefix("-")
-        return digits.isNotEmpty() && digits.all { it in '0'..'9' } && (digits[0] != '0' || digits.length == 1)
+        return digits.isNotEmpty() && digits.all { it in '0'..'9' } && (digits[0] != '0' || written == "0")
     }
 
     private fun place(path: YamlPath): String =

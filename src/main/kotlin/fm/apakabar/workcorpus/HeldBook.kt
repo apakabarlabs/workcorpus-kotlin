@@ -52,6 +52,7 @@ internal fun assemble(
     reading: HeldReading,
 ): Work {
     val made = pieces.map { Piece(number = it.number, title = it.title, lines = it.lines, cutSizes = it.cutSizes) }
+    WorkCorpus.validate(made)
     return Work(
         language = language,
         pieces = made,

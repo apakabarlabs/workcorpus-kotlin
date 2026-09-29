@@ -88,3 +88,13 @@ cases:
     fixture: work
     replace: "id: '3'"
     with: "id: 3"
+  - case: a piece identified as 0 is refused as out of order, not as a part out of range
+    fixture: work
+    replace: "id: '1'"
+    with: "id: '0'"
+    refused: "Expected piece 1, found 0."
+  - case: a book piece numbered 0 is refused as out of order
+    fixture: book-with-listening
+    replace: "  - number: 1\n"
+    with: "  - number: 0\n"
+    refused: "Expected piece 1, found 0."

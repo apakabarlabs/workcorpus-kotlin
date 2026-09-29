@@ -829,3 +829,129 @@ cases:
     replace: "    title: First poem\n"
     with: "    title: 'Null'\n"
     read: {titles: ["Null"]}
+  - case: parts that cover a piece twice are refused
+    fixture: book-with-listening
+    replace: "    first: 1\n    last: 1\n"
+    with: "    first: 1\n    last: 1\n  - title: Again\n    summary: The same poem again.\n    first: 1\n    last: 1\n"
+    error: partsDoNotCoverTheWork
+    refused: "The parts do not cover the work exactly once."
+  - case: a part that runs past the last piece is refused rather than counted past
+    fixture: book-with-listening
+    replace: "    first: 1\n    last: 1\n"
+    with: "    first: 1\n    last: 2\n"
+    error: partOutOfRange
+    refused: "A part runs from piece 1 to piece 2, which is not a range of pieces in the work."
+  - case: a part that runs past the largest 32-bit piece is refused rather than overflowing
+    fixture: book-with-listening
+    replace: "    first: 1\n    last: 1\n"
+    with: "    first: 1\n    last: 2147483647\n"
+    error: partOutOfRange
+    refused: "A part runs from piece 1 to piece 2147483647, which is not a range of pieces in the work."
+  - case: a part that ends before it starts is refused
+    fixture: book-with-listening
+    replace: "    first: 1\n    last: 1\n"
+    with: "    first: 3\n    last: 2\n"
+    error: partOutOfRange
+    refused: "A part runs from piece 3 to piece 2, which is not a range of pieces in the work."
+  - case: a part that starts before piece one is refused
+    fixture: book-with-listening
+    replace: "    first: 1\n    last: 1\n"
+    with: "    first: 0\n    last: 1\n"
+    error: partOutOfRange
+    refused: "A part runs from piece 0 to piece 1, which is not a range of pieces in the work."
+  - case: stage field bounds out of order are refused
+    fixture: book-with-listening
+    replace: "  begun_below: 0.5\n"
+    with: "  begun_below: 0.0005\n"
+    error: invalidStageFieldScale
+    refused: "The stage field bounds are not increasing values between zero and one."
+  - case: a first stage field bound of zero is refused
+    fixture: book-with-listening
+    replace: "  untouched_below: 0.001\n"
+    with: "  untouched_below: 0\n"
+    error: invalidStageFieldScale
+    refused: "The stage field bounds are not increasing values between zero and one."
+  - case: a last stage field bound past one is refused
+    fixture: book-with-listening
+    replace: "  most_below: 1.0\n"
+    with: "  most_below: 1.5\n"
+    error: invalidStageFieldScale
+    refused: "The stage field bounds are not increasing values between zero and one."
+  - case: a cut of no lines is refused, naming the piece and the stage
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [1, 0]\n"
+    error: emptyCut
+    refused: "Piece 1 has a block cut of 0 lines; a cut holds at least one."
+  - case: a cut of fewer than no lines is refused, naming its size
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [-2, 3]\n"
+    error: emptyCut
+    refused: "Piece 1 has a block cut of -2 lines; a cut holds at least one."
+  - case: cuts for a stage there is no such thing as are refused rather than ignored
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      stanza: [1]\n"
+    error: cutsForUnknownStage
+    refused: "Piece 1 is cut for a stage called stanza, which is not a reading stage."
+  - case: cuts for the line stage are refused, since that stage is never cut
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      line: [1]\n"
+    error: cutsForLineStage
+    refused: "Piece 1 is cut for the line stage, which is read one line at a time."
+  - case: cuts that stop short of the piece are refused, naming piece and stage
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line., The second line.]\n    cuts:\n      block: [1]\n"
+    error: cutsDoNotCoverThePiece
+    refused: "Piece 1 is cut at the block stage into 1 lines, but it has 2."
+  - case: a stage named with no cuts at all is refused as covering no lines
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: []\n"
+    error: cutsDoNotCoverThePiece
+    refused: "Piece 1 is cut at the block stage into 0 lines, but it has 1."
+  - case: cuts that run past the piece are refused rather than cut short
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [1, 1]\n"
+    error: cutsDoNotCoverThePiece
+    refused: "Piece 1 is cut at the block stage into 2 lines, but it has 1."
+  - case: cuts whose sizes add up past the largest 32-bit number are refused at that number
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [2147483647, 1]\n"
+    error: cutsDoNotCoverThePiece
+    refused: "Piece 1 is cut at the block stage into 2147483647 lines, but it has 1."
+  - case: a work file whose cuts overrun a piece is refused
+    fixture: work
+    replace: "          block:\n            - 2\n"
+    with: "          block:\n            - 3\n"
+    error: cutsDoNotCoverThePiece
+    refused: "Piece 1 is cut at the block stage into 3 lines, but it has 2."
+  - case: a work file whose cuts fall short of a piece is refused
+    fixture: work
+    replace: "          block:\n            - 2\n"
+    with: "          block:\n            - 1\n"
+    error: cutsDoNotCoverThePiece
+    refused: "Piece 1 is cut at the block stage into 1 lines, but it has 2."
+  - case: of several bad stages the one first in code-point order is named, whatever the order written
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      stanza: [1]\n      block: [2]\n"
+    error: cutsDoNotCoverThePiece
+    refused: "Piece 1 is cut at the block stage into 2 lines, but it has 1."
+  - case: the line stage is named before an unknown stage that sorts after it
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      stanza: [1]\n      line: [1]\n"
+    error: cutsForLineStage
+    refused: "Piece 1 is cut for the line stage, which is read one line at a time."
+  - case: an unknown stage that sorts first is named before a stage cut wrongly
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [2]\n      Block: [1]\n"
+    error: cutsForUnknownStage
+    refused: "Piece 1 is cut for a stage called Block, which is not a reading stage."

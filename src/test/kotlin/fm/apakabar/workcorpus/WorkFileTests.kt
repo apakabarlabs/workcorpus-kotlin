@@ -59,36 +59,6 @@ class WorkFileTests {
     }
 
     @Test
-    fun `a work file whose cuts overrun a piece is refused`() {
-        val overrun =
-            Fixtures.work().replace(
-                "          block:\n            - 2\n",
-                "          block:\n            - 3\n",
-            )
-
-        assertNotEquals(Fixtures.work(), overrun)
-        assertEquals(
-            WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = 3, lines = 2),
-            assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> { WorkCorpus.decodeWork(overrun) },
-        )
-    }
-
-    @Test
-    fun `a work file whose cuts fall short of a piece is refused`() {
-        val short =
-            Fixtures.work().replace(
-                "          block:\n            - 2\n",
-                "          block:\n            - 1\n",
-            )
-
-        assertNotEquals(Fixtures.work(), short)
-        assertEquals(
-            WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = 1, lines = 2),
-            assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> { WorkCorpus.decodeWork(short) },
-        )
-    }
-
-    @Test
     fun `a piece identifier past 32 bits is refused as not a number`() {
         val past = Fixtures.work().replace("id: '3'", "id: '2147483648'")
 

@@ -23,18 +23,6 @@ class WorkTests {
     }
 
     @Test
-    fun `parts have to cover the whole work`() {
-        val parts =
-            listOf(
-                Part(title = "First", summary = "", first = 1, last = 10),
-                Part(title = "Second", summary = "", first = 12, last = 20),
-            )
-        assertFailsWith<WorkCorpus.WorkShapeError.PartsDoNotCoverTheWork> {
-            WorkCorpus.validateConfiguration(work(parts = parts))
-        }
-    }
-
-    @Test
     fun `the pieces free to read have to be unique members of the work`() {
         assertFailsWith<WorkCorpus.WorkShapeError.InvalidFreePieces> {
             WorkCorpus.validateConfiguration(work(free = listOf(1, 1)))
@@ -48,21 +36,6 @@ class WorkTests {
         assertNotEquals(Fixtures.text("book-with-listening"), book)
         val error = assertFailsWith<WorkCorpus.DocumentError> { WorkCorpus.decodeWorkFromBook(book) }
         assertTrue("language" in error.message.orEmpty(), error.message)
-    }
-
-    @Test
-    fun `a book whose piece is cut short of its lines is refused, naming piece and stage`() {
-        val book =
-            Fixtures.text("book-with-listening").replace(
-                "    lines: [The first line.]\n",
-                "    lines: [The first line., The second line.]\n    cuts:\n      block: [1]\n",
-            )
-
-        assertNotEquals(Fixtures.text("book-with-listening"), book)
-        assertEquals(
-            WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece(piece = 1, stage = "block", cut = 1, lines = 2),
-            assertFailsWith<WorkCorpus.WorkShapeError.CutsDoNotCoverThePiece> { WorkCorpus.decodeWorkFromBook(book) },
-        )
     }
 
     @Test
@@ -86,30 +59,15 @@ class WorkTests {
     }
 
     @Test
-    fun `a part that runs past the last piece is refused rather than overflowing`() {
-        val work = work(parts = listOf(Part(title = "All", summary = "", first = 1, last = Int.MAX_VALUE)))
-
-        assertEquals(
-            WorkCorpus.WorkShapeError.PartOutOfRange(first = 1, last = Int.MAX_VALUE),
-            assertFailsWith<WorkCorpus.WorkShapeError.PartOutOfRange> { WorkCorpus.validateConfiguration(work) },
-        )
-    }
-
-    @Test
-    fun `a part that ends before it starts, or starts before piece one, cannot be made`() {
+    fun `a part held so that it ends before it starts cannot be made`() {
         assertEquals(
             WorkCorpus.WorkShapeError.PartOutOfRange(first = 3, last = 2),
             assertFailsWith<WorkCorpus.WorkShapeError.PartOutOfRange> { Part(title = "Back", summary = "", first = 3, last = 2) },
-        )
-        assertEquals(
-            WorkCorpus.WorkShapeError.PartOutOfRange(first = 0, last = 2),
-            assertFailsWith<WorkCorpus.WorkShapeError.PartOutOfRange> { Part(title = "Early", summary = "", first = 0, last = 2) },
         )
     }
 
     private fun work(
         threshold: Int = 3,
-        parts: List<Part>? = null,
         free: List<Int> = listOf(1),
     ): Work {
         val pieces =
@@ -119,7 +77,7 @@ class WorkTests {
         return Work(
             language = "eng",
             pieces = pieces,
-            parts = parts ?: listOf(Part(title = "The work", summary = "", first = 1, last = pieces.size)),
+            parts = listOf(Part(title = "The work", summary = "", first = 1, last = pieces.size)),
             free = free,
             stageField = StageFieldScale(untouchedBelow = 0.001, begunBelow = 0.5, mostBelow = 1.0),
             difficultWords = DifficultWordsConfiguration(scoreThreshold = threshold),

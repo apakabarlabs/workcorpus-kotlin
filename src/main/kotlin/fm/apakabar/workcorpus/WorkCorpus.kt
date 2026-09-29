@@ -129,8 +129,8 @@ object WorkCorpus {
         }
 
         /**
-         * A field that holds text is null: written as `~`, `null` or left empty. Empty text
-         * is written as `""`.
+         * A field that holds text is null, as the YAML 1.2 core schema reads null: written as
+         * `null`, `Null`, `NULL` or `~`, or left empty. Empty text is written as `""`.
          */
         data class NullText(
             val place: String,
@@ -145,7 +145,10 @@ object WorkCorpus {
             val place: String,
         ) : WorkShapeError("The work's $place is not a decimal number written as plain digits.")
 
-        /** A YAML mapping names the same key more than once. The parser's own error is kept as the cause. */
+        /**
+         * A YAML mapping names the same key more than once. Of several repeated keys, the one
+         * repeated first in the document is named. The parser's own error is kept as the cause.
+         */
         data class RepeatedKey(
             val key: String,
         ) : WorkShapeError("The work names $key more than once in one mapping.") {

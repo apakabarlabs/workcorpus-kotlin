@@ -59,12 +59,7 @@ internal fun parseYaml(yaml: String): Node {
         } catch (reference: ForbiddenAnchorOrAliasException) {
             throw WorkCorpus.WorkShapeError.YamlReference(referencePlace(reference.path.segments), reference)
         } catch (repeated: DuplicateKeyException) {
-            val key =
-                repeated.duplicatePath.segments
-                    .filterIsInstance<YamlPathSegment.MapElementKey>()
-                    .lastOrNull()
-                    ?.key
-            throw WorkCorpus.WorkShapeError.RepeatedKey(key ?: repeated.key, repeated)
+            throw WorkCorpus.WorkShapeError.RepeatedKey(firstRepeatedKey(yaml) ?: repeatedKey(repeated), repeated)
         } catch (failure: YamlException) {
             val segments = failure.path.segments
             val merge = segments.indexOfFirst(::isMerge)
@@ -73,6 +68,27 @@ internal fun parseYaml(yaml: String): Node {
         }
     return yamlNode(root, place = "")
 }
+
+private fun firstRepeatedKey(yaml: String): String? {
+    val lines = yaml.split('\n')
+    for (count in 1..lines.size) {
+        val leading = lines.take(count).joinToString("\n")
+        try {
+            Yaml.default.parseToYamlNode(leading)
+        } catch (repeated: DuplicateKeyException) {
+            return repeatedKey(repeated)
+        } catch (unfinished: YamlException) {
+            continue
+        }
+    }
+    return null
+}
+
+private fun repeatedKey(repeated: DuplicateKeyException): String =
+    repeated.duplicatePath.segments
+        .filterIsInstance<YamlPathSegment.MapElementKey>()
+        .lastOrNull()
+        ?.key ?: repeated.key
 
 private fun isMerge(segment: YamlPathSegment): Boolean =
     segment is YamlPathSegment.Merge || (segment is YamlPathSegment.MapElementKey && segment.key == "<<")

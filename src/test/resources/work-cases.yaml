@@ -192,6 +192,18 @@ cases:
     with: "free: [1]\nfree: [1]\n"
     error: repeatedKey
     refused: "The work names free more than once in one mapping."
+  - case: of several keys repeated in one mapping, the first repeated in the document is named
+    fixture: book-with-listening
+    replace: "    summary: The first part.\n    first: 1\n    last: 1\n"
+    with: "    summary: The first part.\n    summary: The first part.\n    first: 1\n    last: 1\n    first: 1\n"
+    error: repeatedKey
+    refused: "The work names summary more than once in one mapping."
+  - case: a key repeated early in an outer mapping is named before one repeated later in an inner one
+    fixture: book-with-listening
+    replace: "language: eng\npieces:\n  - number: 1\n    title: First poem\n"
+    with: "language: eng\nlanguage: eng\npieces:\n  - number: 1\n    title: First poem\n    title: First poem\n"
+    error: repeatedKey
+    refused: "The work names language more than once in one mapping."
   - case: a cut written as -0 is refused
     fixture: book-with-listening
     replace: "    lines: [The first line.]\n"

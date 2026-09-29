@@ -41,7 +41,8 @@
   field, and so is a JSON bound of 38 or more significant digits or one a `Double`
   cannot hold, such as `1e-400` or `1e400`.
 - A YAML mapping that names a key twice is refused with
-  `WorkShapeError.RepeatedKey`, naming the key. A key the work does not know is
+  `WorkShapeError.RepeatedKey`, naming the key; of several, the key repeated first
+  in the document is named. A key the work does not know is
   skipped, in YAML and in JSON alike, whatever the `Json` configuration says of
   unknown keys, since the library reads the JSON tree itself; the tests decode
   with the default `Json`. A key repeated in one JSON object is not refused:

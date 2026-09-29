@@ -1,10 +1,6 @@
 package fm.apakabar.workcorpus
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
-import org.junit.jupiter.params.provider.ValueSource
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
@@ -54,14 +50,6 @@ class WorkFileTests {
     }
 
     @Test
-    fun `the language comes off the work file as the work names it`() {
-        assertEquals("eng", WorkCorpus.decodeWork(Fixtures.work()).language)
-
-        val serbian = Fixtures.work().replace("language: eng\n", "language: srp\n")
-        assertEquals("srp", WorkCorpus.decodeWork(serbian).language)
-    }
-
-    @Test
     fun `a work file that does not name its language is refused, and says so`() {
         val unnamed = Fixtures.work().replace("language: eng\n", "")
 
@@ -100,20 +88,6 @@ class WorkFileTests {
         )
     }
 
-    @ParameterizedTest
-    @MethodSource("invalidNumbers")
-    fun `a work file number that is not a YAML integer within 32 bits is refused, naming the field`(
-        written: String,
-        replaced: String,
-        place: String,
-    ) {
-        val changed = Fixtures.work().replace(written, replaced)
-
-        assertNotEquals(Fixtures.work(), changed)
-        val error = assertFailsWith<WorkCorpus.WorkShapeError.InvalidNumber> { WorkCorpus.decodeWork(changed) }
-        assertEquals(WorkCorpus.WorkShapeError.InvalidNumber(place), error)
-    }
-
     @Test
     fun `a piece identifier past 32 bits is refused as not a number`() {
         val past = Fixtures.work().replace("id: '3'", "id: '2147483648'")
@@ -122,31 +96,6 @@ class WorkFileTests {
             WorkCorpus.WorkError.PieceIsNotNumbered("2147483648"),
             assertFailsWith<WorkCorpus.WorkError> { assembleWork(past) },
         )
-    }
-
-    @Test
-    fun `a work file piece whose cuts are null is read as having none`() {
-        val none =
-            Fixtures.work().replace(
-                "        cuts:\n          block:\n            - 2\n",
-                "        cuts: null\n",
-            )
-
-        assertNotEquals(Fixtures.work(), none)
-        assertEquals(emptyMap(), WorkCorpus.decodeWork(none).pieces[0].cutSizes)
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = ["0.2", "0", "200"])
-    fun `a work file that still names a shortest attempt is read, whatever it says`(seconds: String) {
-        val older =
-            Fixtures.work().replace(
-                "  difficult_word_score: 3\n",
-                "  difficult_word_score: 3\n  shortest_attempt_seconds: $seconds\n",
-            )
-
-        assertNotEquals(Fixtures.work(), older)
-        assertEquals(3, WorkCorpus.decodeWork(older).pieces.size)
     }
 
     @Test
@@ -172,27 +121,5 @@ class WorkFileTests {
 
         val error = assertFailsWith<WorkCorpus.CorpusError> { WorkCorpus.decodeWork(skipped) }
         assertEquals(WorkCorpus.CorpusError.OutOfOrder(expected = 2, found = 4), error)
-    }
-
-    companion object {
-        @JvmStatic
-        fun invalidNumbers(): List<Arguments> =
-            listOf(
-                Arguments.of(
-                    "          block:\n            - 2\n",
-                    "          block:\n            - -99999999999999999999\n",
-                    "sections[0].pieces[0].cuts.block[0]",
-                ),
-                Arguments.of(
-                    "          block:\n            - 2\n",
-                    "          block:\n            - '2'\n",
-                    "sections[0].pieces[0].cuts.block[0]",
-                ),
-                Arguments.of(
-                    "  difficult_word_score: 3\n",
-                    "  difficult_word_score: true\n",
-                    "reading.difficult_word_score",
-                ),
-            )
     }
 }

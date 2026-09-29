@@ -430,3 +430,323 @@ cases:
     with: "  - '<<': {short: Opening}\n    title: Opening poems\n"
     error: yamlReference
     refused: "The work's parts[0] is written with a YAML anchor, alias or merge key; a work writes each value out where it belongs."
+  - case: a book that still carries listening limits is read as before
+    fixture: book-with-listening
+    read: {titles: [First poem], language: eng, threshold: 3}
+  - case: a book is read whatever its listening says, such as a shortest attempt of 0
+    fixture: book-with-listening
+    replace: "listening:\n  shortest_attempt_seconds: 0.2\n"
+    with: "listening:\n  shortest_attempt_seconds: 0\n"
+    read: {titles: [First poem]}
+  - case: a book is read whatever its listening says, such as a shortest attempt of 200
+    fixture: book-with-listening
+    replace: "listening:\n  shortest_attempt_seconds: 0.2\n"
+    with: "listening:\n  shortest_attempt_seconds: 200\n"
+    read: {titles: [First poem]}
+  - case: a book is read whatever its listening says, such as an empty mapping
+    fixture: book-with-listening
+    replace: "listening:\n  shortest_attempt_seconds: 0.2\n"
+    with: "listening: {}\n"
+    read: {titles: [First poem]}
+  - case: a book is read whatever its listening says, such as a word
+    fixture: book-with-listening
+    replace: "listening:\n  shortest_attempt_seconds: 0.2\n"
+    with: "listening: quick\n"
+    read: {titles: [First poem]}
+  - case: a book is read without any listening
+    fixture: book-with-listening
+    replace: "listening:\n  shortest_attempt_seconds: 0.2\n"
+    with: ""
+    read: {titles: [First poem]}
+  - case: a work file that still names a shortest attempt of 0.2 is read
+    fixture: work
+    replace: "  difficult_word_score: 3\n"
+    with: "  difficult_word_score: 3\n  shortest_attempt_seconds: 0.2\n"
+    read: {numbers: [1, 2, 3]}
+  - case: a work file that still names a shortest attempt of 0 is read
+    fixture: work
+    replace: "  difficult_word_score: 3\n"
+    with: "  difficult_word_score: 3\n  shortest_attempt_seconds: 0\n"
+    read: {numbers: [1, 2, 3]}
+  - case: a work file that still names a shortest attempt of 200 is read
+    fixture: work
+    replace: "  difficult_word_score: 3\n"
+    with: "  difficult_word_score: 3\n  shortest_attempt_seconds: 200\n"
+    read: {numbers: [1, 2, 3]}
+  - case: a book piece whose cuts are null is read as having none
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts: null\n"
+    read: {cuts: {}}
+  - case: a work file piece whose cuts are null is read as having none
+    fixture: work
+    replace: "        cuts:\n          block:\n            - 2\n"
+    with: "        cuts: null\n"
+    read: {cuts: {}, numbers: [1, 2, 3]}
+  - case: a work file section whose short name is null is read as having none
+    fixture: work
+    replace: "    short: The Procreation\n"
+    with: "    short: ~\n"
+    read: {shortTitles: [The Procreation Sonnets, The Fair Youth]}
+  - case: a work file section whose summary is null is read as having none
+    fixture: work
+    replace: "    summary: Marry, and let your beauty outlive you.\n"
+    with: "    summary:\n"
+    read: {summaries: ["", The poet writes to the young man.]}
+  - case: a cut past 32 bits is refused, naming the field
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [2147483648]\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a cut far past 64 bits is refused, naming the field
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [99999999999999999999]\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a cut in quotes is refused, naming the field
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: ['1']\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a cut written as 1.0 is refused in YAML
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [1.0]\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a cut written as true is refused
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [true]\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a piece number in quotes is refused
+    fixture: book-with-listening
+    replace: "  - number: 1\n"
+    with: "  - number: '1'\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].number is not a whole number that fits in 32 bits."
+  - case: a piece number with a leading zero is refused
+    fixture: book-with-listening
+    replace: "  - number: 1\n"
+    with: "  - number: 01\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].number is not a whole number that fits in 32 bits."
+  - case: a part bound in quotes is refused
+    fixture: book-with-listening
+    replace: "    last: 1\n"
+    with: "    last: '1'\n"
+    error: invalidNumber
+    refused: "The work's parts[0].last is not a whole number that fits in 32 bits."
+  - case: a free piece past 32 bits is refused
+    fixture: book-with-listening
+    replace: "free: [1]\n"
+    with: "free: [2147483648]\n"
+    error: invalidNumber
+    refused: "The work's free[0] is not a whole number that fits in 32 bits."
+  - case: a threshold written as 3.5 is refused
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: 3.5\n"
+    error: invalidNumber
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a work file cut far below 64 bits is refused, naming the field
+    fixture: work
+    replace: "            - 2\n"
+    with: "            - -99999999999999999999\n"
+    error: invalidNumber
+    refused: "The work's sections[0].pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a work file cut in quotes is refused
+    fixture: work
+    replace: "            - 2\n"
+    with: "            - '2'\n"
+    error: invalidNumber
+    refused: "The work's sections[0].pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a work file threshold written as true is refused
+    fixture: work
+    replace: "  difficult_word_score: 3\n"
+    with: "  difficult_word_score: true\n"
+    error: invalidNumber
+    refused: "The work's reading.difficult_word_score is not a whole number that fits in 32 bits."
+  - case: a threshold written as octal 010 is refused
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: 010\n"
+    error: invalidNumber
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a threshold written as hexadecimal 0x4 is refused
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: 0x4\n"
+    error: invalidNumber
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a threshold written as octal 0o4 is refused
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: 0o4\n"
+    error: invalidNumber
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a threshold written as binary 0b1 is refused
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: 0b1\n"
+    error: invalidNumber
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a threshold written with an underscore is refused
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: 1_0\n"
+    error: invalidNumber
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a threshold written with + is refused
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: +1\n"
+    error: invalidNumber
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a threshold written as sexagesimal is refused
+    fixture: book-with-listening
+    replace: "  score_threshold: 3\n"
+    with: "  score_threshold: 1:30\n"
+    error: invalidNumber
+    refused: "The work's difficult_words.score_threshold is not a whole number that fits in 32 bits."
+  - case: a cut written as octal 010 is refused
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [010]\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a cut written as hexadecimal 0x4 is refused
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [0x4]\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a cut written as octal 0o4 is refused
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [0o4]\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a cut written as binary 0b1 is refused
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [0b1]\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a cut written with an underscore is refused
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [1_0]\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a cut written with + is refused
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [+1]\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: a cut written as sexagesimal is refused
+    fixture: book-with-listening
+    replace: "    lines: [The first line.]\n"
+    with: "    lines: [The first line.]\n    cuts:\n      block: [1:30]\n"
+    error: invalidNumber
+    refused: "The work's pieces[0].cuts.block[0] is not a whole number that fits in 32 bits."
+  - case: an empty language is refused, naming the value
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: \"\"\n"
+    error: invalidLanguage
+    refused: "The work names its language as \"\", which is not a language tag such as en, eng or en-GB."
+  - case: a language of one space is refused, naming the value
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: \" \"\n"
+    error: invalidLanguage
+    refused: "The work names its language as \" \", which is not a language tag such as en, eng or en-GB."
+  - case: a language of a zero-width space is refused, naming the value written out
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: \"\\u200B\"\n"
+    error: invalidLanguage
+    refused: "The work names its language as \"\\u{200B}\", which is not a language tag such as en, eng or en-GB."
+  - case: a language of a next-line character is refused, naming the value written out
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: \"\\u0085\"\n"
+    error: invalidLanguage
+    refused: "The work names its language as \"\\u{85}\", which is not a language tag such as en, eng or en-GB."
+  - case: a language followed by a line break is refused, naming the value written out
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: \"eng\\n\"\n"
+    error: invalidLanguage
+    refused: "The work names its language as \"eng\\u{A}\", which is not a language tag such as en, eng or en-GB."
+  - case: a language in capitals is refused
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: EN\n"
+    error: invalidLanguage
+    refused: "The work names its language as \"EN\", which is not a language tag such as en, eng or en-GB."
+  - case: a language of one letter is refused
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: e\n"
+    error: invalidLanguage
+    refused: "The work names its language as \"e\", which is not a language tag such as en, eng or en-GB."
+  - case: a language named in English is refused
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: english\n"
+    error: invalidLanguage
+    refused: "The work names its language as \"english\", which is not a language tag such as en, eng or en-GB."
+  - case: a language tag ending in a hyphen is refused
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: en-\n"
+    error: invalidLanguage
+    refused: "The work names its language as \"en-\", which is not a language tag such as en, eng or en-GB."
+  - case: a language tag whose subtags end in a hyphen is refused
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: en-GB-\n"
+    error: invalidLanguage
+    refused: "The work names its language as \"en-GB-\", which is not a language tag such as en, eng or en-GB."
+  - case: a two-letter language tag is read
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: en\n"
+    read: {language: en}
+  - case: a three-letter language tag is read
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: srp\n"
+    read: {language: srp}
+  - case: a language tag with a region is read
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: en-GB\n"
+    read: {language: en-GB}
+  - case: a language tag with a script and a region is read
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: sr-Latn-RS\n"
+    read: {language: sr-Latn-RS}
+  - case: a language tag with a script is read
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: zh-Hant\n"
+    read: {language: zh-Hant}
+  - case: a language tag with a numeric region is read
+    fixture: book-with-listening
+    replace: "language: eng\n"
+    with: "language: es-419\n"
+    read: {language: es-419}
+  - case: a work file carries the language it names
+    fixture: work
+    replace: "language: eng\n"
+    with: "language: srp\n"
+    read: {language: srp}

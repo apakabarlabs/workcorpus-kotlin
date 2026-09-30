@@ -24,7 +24,7 @@ class FixtureCopyTests {
             OK,
             answer.statusCode(),
             "$address answered ${answer.statusCode()}: push workcorpus-swift if $name is new there, " +
-                "or run `make sync-yaml` if it is gone",
+                "or run `make sync-yaml` in workcorpus-swift if it is gone",
         )
         return answer.body()
     }
@@ -34,7 +34,7 @@ class FixtureCopyTests {
         assertEquals(
             SHARED.toSet(),
             Fixtures.copied(),
-            "the copied fixtures differ from the list of shared ones: run `make sync-yaml` and update the list",
+            "the copied fixtures differ from the list of shared ones: run `make sync-yaml` in workcorpus-swift and update the list",
         )
     }
 
@@ -45,7 +45,7 @@ class FixtureCopyTests {
                 assertContentEquals(
                     fetch(name),
                     Fixtures.bytes(name),
-                    "$name differs from workcorpus-swift main: run `make sync-yaml`, or push workcorpus-swift " +
+                    "$name differs from workcorpus-swift main: run `make sync-yaml` there, or push workcorpus-swift " +
                         "if the change is there only locally",
                 )
             }

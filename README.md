@@ -17,7 +17,7 @@ deliberate: where the lead lets Swift's own `DecodingError` report a document
 that is not YAML, a missing field or a value of the wrong kind, this port reports
 it as `WorkCorpus.DocumentError`, so that no error of its YAML parser reaches a
 caller. The cases every port is held to live in the lead's
-`work-cases.yaml`; they are synced from there with `make sync-yaml`, and a test
+`work-cases.yaml`; they are synced from there with `make sync-yaml` in workcorpus-swift, and a test
 holds the copies against that repository, so the ports cannot quietly drift
 apart.
 
@@ -184,7 +184,7 @@ make test
 make lint
 make docs
 make build
-make sync-yaml   # after the work files change in workcorpus-swift
+make -C ../workcorpus-swift sync-yaml   # after the work files change there
 ```
 
 Releases are published by the [Release workflow](https://github.com/apakabarlabs/workcorpus-kotlin/actions/workflows/release.yml).

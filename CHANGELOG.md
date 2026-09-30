@@ -15,6 +15,12 @@ a *work file*, sections holding pieces as an author writes them, as an assembled
 *book*, the flat form with `pieces`, `parts`, `stage_field` and `difficult_words`,
 or is built in code with `WorkCorpus.work` from values the app already holds.
 
+## 0.7.0
+
+Nothing changes in the Kotlin library. The version follows workcorpus-swift 0.7.0,
+whose changes concern Swift only, so that the two ports keep the same major and
+minor version for the same behaviour.
+
 ## 0.6.0
 
 ### Added

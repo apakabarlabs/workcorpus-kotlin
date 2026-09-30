@@ -153,7 +153,7 @@ repositories {
 }
 
 dependencies {
-    implementation("fm.apakabar:workcorpus-kotlin:0.6.0")
+    implementation("fm.apakabar:workcorpus-kotlin:0.7.0")
 }
 ```
 

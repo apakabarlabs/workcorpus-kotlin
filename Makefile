@@ -1,9 +1,6 @@
-SWIFT_DIR = ../workcorpus-swift
-TEST_RESOURCES = src/test/resources
-
 .DEFAULT_GOAL := build
 
-.PHONY: build test test-build docs comments lint lint-fix format clean install install-tools sync-yaml publish publish-local publish-check
+.PHONY: build test test-build docs comments lint lint-fix format clean install install-tools publish publish-local publish-check
 
 install-tools:
 	python3 -m pip install --quiet --upgrade git+https://github.com/botforge-pro/commentcensor.git
@@ -47,8 +44,3 @@ publish-local:
 
 publish-check:
 	./gradlew publishToMavenLocal
-
-sync-yaml:
-	mkdir -p $(TEST_RESOURCES)
-	rm -f $(TEST_RESOURCES)/*.yaml
-	cp $(SWIFT_DIR)/Tests/WorkCorpusTests/Fixtures/*.yaml $(TEST_RESOURCES)/

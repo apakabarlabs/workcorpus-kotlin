@@ -154,7 +154,7 @@ repositories {
 }
 
 dependencies {
-    implementation("fm.apakabar:workcorpus-kotlin:0.7.0")
+    implementation("fm.apakabar:workcorpus-kotlin:0.8.0")
 }
 ```
 
@@ -164,7 +164,11 @@ The library reads YAML with
 [snakeyaml-engine-kmp](https://github.com/krzema12/snakeyaml-engine-kmp)
 (`it.krzeminski:snakeyaml-engine-kmp`), going once over its parser events: the
 same pass finds the first YAML problem in a work and builds what the work is read
-from. It does not appear in this library's public API.
+from. It does not appear in this library's public API. The library needs
+snakeyaml-engine-kmp 4.x and is built against 4.0.1; it moves to
+snakeyaml-engine-kmp 5 together with a kaml or kotaml release that supports 5,
+since an app that uses one of them beside this library resolves a single version
+of the engine for both.
 
 ## Documentation
 

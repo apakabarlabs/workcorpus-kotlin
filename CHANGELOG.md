@@ -15,7 +15,7 @@ a *work file*, sections holding pieces as an author writes them, as an assembled
 *book*, the flat form with `pieces`, `parts`, `stage_field` and `difficult_words`,
 or is built in code with `WorkCorpus.work` from values the app already holds.
 
-## Unreleased
+## 0.8.0
 
 ### Removed
 
@@ -30,7 +30,7 @@ or is built in code with `WorkCorpus.work` from values the app already holds.
   ```kotlin
   // 0.7
   val work = Yaml.default.decodeFromString(Work.serializer(), yaml)
-  // from this release
+  // 0.8
   val work = WorkCorpus.decodeWorkFromBook(yaml)
   ```
 
@@ -40,13 +40,26 @@ or is built in code with `WorkCorpus.work` from values the app already holds.
   tag, which the kaml path read past. Reading JSON does not change:
 
   ```kotlin
-  // 0.7 and from this release
+  // 0.7 and 0.8
   val work = Json.decodeFromString(Work.serializer(), json)
   ```
 - A project that uses kaml (`com.charleskorn.kaml:kaml`) itself no longer gets a
   second copy of its classes through this library, so it need not exclude one.
 
 ### Changed
+
+- The library reads YAML with snakeyaml-engine-kmp alone and needs its 4.x line;
+  it is built against 4.0.1. It moves to snakeyaml-engine-kmp 5 together with a
+  kaml or kotaml release that supports 5, since an app that uses one of them
+  beside this library resolves a single version of the engine for both.
+- The text of a `DocumentError` for YAML the parser cannot read now comes from
+  snakeyaml-engine rather than from kaml, after "The work cannot be read as
+  YAML: ". It is worded differently: it may name the place as "in reader, line
+  …, column …", and it no longer adds kaml's hint about the indentation of a
+  nearby line.
+- An empty YAML document, or one holding only comments, is refused with
+  `DocumentError` "The work's top level is not a mapping." rather than "The work
+  cannot be read as YAML: The YAML document is empty."
 
 - A YAML work followed by a second document, such as one that starts with `---`
   after the work, is refused with `DocumentError`, "The work cannot be read as
@@ -56,9 +69,11 @@ or is built in code with `WorkCorpus.work` from values the app already holds.
   A problem in the work itself is still named first. One document between `---`
   and `...` is read as before.
 - A key written as YAML null, such as `null:` or `~:`, is read as that text, as
-  in workcorpus-swift, and as no field of a work has such a name, it is skipped
-  like any key the work does not know. Before, the work was refused with
-  `DocumentError`.
+  in workcorpus-swift. In a mapping of fixed fields, such as the top level of a
+  book or a piece, no field has such a name, so the key is skipped like any key
+  the work does not know. In `elisions`, whose keys are the work's own spellings,
+  it is kept: `null: [none]` gives `elisions["null"] == listOf("none")`. Before,
+  either was refused with `DocumentError`.
 
 ### Fixed
 

@@ -2,15 +2,3 @@ documentation: https://apakabarlabs.github.io/workcorpus-kotlin/scripts/pages.js
 
 skip:
   - build/
-
-allow:
-  - file: src/main/kotlin/fm/apakabar/workcorpus/YamlTree.kt
-    text: |-
-      // Kotlin compiles LoadSettings() to the synthetic constructor that takes every setting,
-      // whose signature snakeyaml-engine-kmp 5.0.0 changed; the no-argument one is in 4 and 5.
-    what_was_tried_and_why_none_of_it_worked:
-      "A constraint of snakeyaml-engine-kmp's binary interface. The build compiles and tests
-       against 4.0.1 only, where LoadSettings() works, so no test here fails when the
-       reflective call is written back as LoadSettings(); the failure is a NoSuchMethodError
-       in a project that resolves engine 5. A name such as defaultSettings says what is made,
-       not why the plain constructor call is avoided."

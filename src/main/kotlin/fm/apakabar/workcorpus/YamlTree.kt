@@ -1,7 +1,6 @@
 package fm.apakabar.workcorpus
 
 import it.krzeminski.snakeyaml.engine.kmp.api.LoadSettings
-import it.krzeminski.snakeyaml.engine.kmp.api.copy
 import it.krzeminski.snakeyaml.engine.kmp.api.lowlevel.Parse
 import it.krzeminski.snakeyaml.engine.kmp.events.AliasEvent
 import it.krzeminski.snakeyaml.engine.kmp.events.CollectionEndEvent
@@ -13,13 +12,7 @@ import it.krzeminski.snakeyaml.engine.kmp.events.NodeEvent
 import it.krzeminski.snakeyaml.engine.kmp.events.ScalarEvent
 import it.krzeminski.snakeyaml.engine.kmp.exceptions.YamlEngineException
 
-// Kotlin compiles LoadSettings() to the synthetic constructor that takes every setting,
-// whose signature snakeyaml-engine-kmp 5.0.0 changed; the no-argument one is in 4 and 5.
-private val UNLIMITED =
-    LoadSettings::class.java
-        .getConstructor()
-        .newInstance()
-        .copy { codePointLimit = Int.MAX_VALUE }
+private val UNLIMITED = LoadSettings(codePointLimit = Int.MAX_VALUE)
 
 private val CORE_SCHEMA_NULLS = setOf("", "~", "null", "Null", "NULL")
 

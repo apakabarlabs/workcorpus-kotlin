@@ -1,9 +1,11 @@
 package fm.apakabar.workcorpus
 
+import it.krzeminski.snakeyaml.engine.kmp.exceptions.ParserException
+import it.krzeminski.snakeyaml.engine.kmp.exceptions.ReaderException
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
+import kotlin.test.assertIs
 
 class YamlReadingTests {
     private val book = Fixtures.text("book-with-listening")
@@ -31,7 +33,7 @@ class YamlReadingTests {
     fun `a second document after an ended one, without a start of its own, is refused by the parser`() {
         val error = assertFailsWith<WorkCorpus.DocumentError> { WorkCorpus.decodeWorkFromBook("$book...\n$book") }
 
-        assertNotNull(error.cause)
+        assertIs<ParserException>(error.cause)
     }
 
     @Test
@@ -74,13 +76,21 @@ class YamlReadingTests {
     }
 
     @Test
+    fun `a spelling written as YAML null among the elisions is kept as that text`() {
+        val work = WorkCorpus.decodeWorkFromBook(book.replace("  th’: [the]\n", "  th’: [the]\n  null: [none]\n  ~: [tilde]\n"))
+
+        assertEquals(listOf("none"), work.elisions["null"])
+        assertEquals(listOf("tilde"), work.elisions["~"])
+    }
+
+    @Test
     fun `a character YAML does not allow is refused as a document error, the parser's own kept as its cause`() {
         val error =
             assertFailsWith<WorkCorpus.DocumentError> {
                 WorkCorpus.decodeWorkFromBook(book.replace("First poem", "First\u0001poem"))
             }
 
-        assertNotNull(error.cause)
+        assertIs<ReaderException>(error.cause)
     }
 
     private companion object {

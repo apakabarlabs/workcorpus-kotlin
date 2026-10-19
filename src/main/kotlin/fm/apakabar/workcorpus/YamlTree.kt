@@ -16,7 +16,7 @@ private val UNLIMITED = LoadSettings(codePointLimit = Int.MAX_VALUE)
 
 private val CORE_SCHEMA_NULLS = setOf("", "~", "null", "Null", "NULL")
 
-private class Collection(
+private class OpenCollection(
     val place: String,
     val mapping: Boolean,
 ) {
@@ -41,7 +41,7 @@ private class Collection(
 }
 
 private class YamlTree {
-    private val open = ArrayDeque<Collection>()
+    private val open = ArrayDeque<OpenCollection>()
     var root: Node? = null
         private set
 
@@ -63,14 +63,14 @@ private class YamlTree {
         if (event is AliasEvent || event.anchor != null) throw WorkCorpus.WorkShapeError.YamlReference(shown)
         if (isTagged(event)) throw WorkCorpus.WorkShapeError.ExplicitTag(shown)
         when (event) {
-            is CollectionStartEvent -> open.addLast(Collection(place, mapping = event is MappingStartEvent))
+            is CollectionStartEvent -> open.addLast(OpenCollection(place, mapping = event is MappingStartEvent))
             is ScalarEvent -> placed(scalar(event, place))
         }
     }
 
     private fun visitKey(
         event: NodeEvent,
-        mapping: Collection,
+        mapping: OpenCollection,
     ) {
         val shown = mapping.place.ifEmpty { "top level" }
         if (event is AliasEvent || event.anchor != null) throw WorkCorpus.WorkShapeError.YamlReference(shown)

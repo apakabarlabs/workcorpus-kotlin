@@ -25,13 +25,15 @@ or is built in code with `WorkCorpus.work` from values the app already holds.
   `StageFieldScale` and `DifficultWordsConfiguration`; given a decoder of any
   other format they throw `WorkCorpus.DocumentError`, saying that YAML is read
   with `decodeWork` or `decodeWorkFromBook`. Read a YAML book with
-  `decodeWorkFromBook` instead:
+  `decodeWorkFromBook` and a work file with `decodeWork` instead:
 
   ```kotlin
   // 0.7
   val work = Yaml.default.decodeFromString(Work.serializer(), yaml)
-  // 0.8
+  // 0.8, a book
   val work = WorkCorpus.decodeWorkFromBook(yaml)
+  // 0.8, a work file
+  val work = WorkCorpus.decodeWork(yaml)
   ```
 
   Unlike the kaml path, `decodeWorkFromBook` checks the whole work — pieces
@@ -44,37 +46,40 @@ or is built in code with `WorkCorpus.work` from values the app already holds.
   val work = Json.decodeFromString(Work.serializer(), json)
   ```
 - A project that uses kaml (`com.charleskorn.kaml:kaml`) itself no longer gets a
-  second copy of its classes through this library, so it need not exclude one.
+  second copy of kaml's classes through this library, so the 0.5.0 advice not to
+  depend on kaml as well no longer applies.
 
 ### Changed
 
 - The library reads YAML with snakeyaml-engine-kmp alone and needs its 4.x line;
-  it is built against 4.0.1. It moves to snakeyaml-engine-kmp 5 together with a
-  kaml or kotaml release that supports 5, since an app that uses one of them
-  beside this library resolves a single version of the engine for both.
-- The text of a `DocumentError` for YAML the parser cannot read now comes from
+  it is built against 4.0.1 and does not yet support 5. Keep the engine on 4.x:
+  a project that also uses kaml or kotaml resolves one engine version for both,
+  and the move to 5 waits for a kaml or kotaml release that supports it.
+- Breaking for code that matches error text: the text of a `DocumentError` for
+  YAML the parser cannot read now comes from
   snakeyaml-engine rather than from kaml, after "The work cannot be read as
   YAML: ". It is worded differently: it may name the place as "in reader, line
   …, column …", and it no longer adds kaml's hint about the indentation of a
   nearby line.
-- An empty YAML document, or one holding only comments, is refused with
+- Breaking for code that matches error text: an empty YAML document, or one
+  holding only comments, is refused with
   `DocumentError` "The work's top level is not a mapping." rather than "The work
   cannot be read as YAML: The YAML document is empty."
-- A YAML work followed by a second document, such as one that starts with `---`
+- Breaking: a YAML work followed by a second document, such as one that starts with `---`
   after the work, is refused with `DocumentError`, "The work cannot be read as
   YAML: a second document follows it.", whatever the second document holds, even
   an anchor, as workcorpus-swift refuses it. Before, an anchor, tag or repeated
   key in the second document was named as `YamlReference`, `ExplicitTag` or
-  `RepeatedKey`. A problem in the work itself, such as an anchor, is still named
-  first, with `WorkShapeError.YamlReference`. One document between `---` and
-  `...` is read as before. Shared cases now hold both ports to this.
-- A key written as YAML null, such as `null:` or `~:`, is read as that text, as
+  `RepeatedKey`. When the work itself has a problem, such as an anchor, that
+  problem is reported rather than the second document, as
+  `WorkShapeError.YamlReference`. One document between `---` and `...` is read
+  as before.
+- Breaking: a key written as YAML null, such as `null:` or `~:`, is read as that text, as
   in workcorpus-swift. In a mapping of fixed fields, such as the top level of a
   book or a piece, no field has such a name, so the key is skipped like any key
   the work does not know. In `elisions`, whose keys are the work's own spellings,
   it is kept: `null: [none]` gives `elisions["null"] == listOf("none")`. Before,
-  either was refused with `DocumentError`. Shared cases now hold both ports to
-  this.
+  such a key was refused with `DocumentError` in both places.
 
 ### Fixed
 

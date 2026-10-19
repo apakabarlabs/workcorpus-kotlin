@@ -108,8 +108,8 @@ without rounding it to zero or infinity.
 `decodeWork` and `decodeWorkFromBook` refuse a malformed work with an error
 that says what is wrong and where:
 
-- a document that is not YAML, a missing field or a value of the wrong kind
-  (`DocumentError`);
+- a document that is not YAML, or is followed by a second YAML document, a
+  missing field or a value of the wrong kind (`DocumentError`);
 - a number not written or not valued as above (`InvalidNumber`), a piece or
   free-piece identifier that is not such a number (`PieceIsNotNumbered`), or a
   bound not written as above (`InvalidFraction`);
@@ -131,13 +131,14 @@ that says what is wrong and where:
   of their piece (`WorkShapeError`).
 
 `WorkCorpus.work` holds values a caller already has to the rules of the last
-item. `Work.serializer()` also reads a work from JSON with kotlinx.serialization,
+item. `Work.serializer()` reads a work from JSON with kotlinx.serialization,
 holding its numbers, fractions and texts to the rules above, as the shared cases
 test with the default `Json`; it checks no relationships between the fields, a
 JSON syntax error reaches the caller as kotlinx.serialization's own error, and a
 key repeated in one JSON object is not refused, the value kept possibly differing
-from the lead's. The YAML rules hold only through `decodeWork` and
-`decodeWorkFromBook`. Rare differences from the lead no case pins: keys equal
+from the lead's. It reads JSON only: with another format's decoder it throws
+`DocumentError`, and YAML is read through `decodeWork` and `decodeWorkFromBook`
+alone. Rare differences from the lead no case pins: keys equal
 only under Unicode canonical equivalence count as one key there and as two here;
 `!!str` written on a quoted value, or `!!str` or `!` on a key, is refused here
 while the lead, which cannot see it, reads it as untagged; and within one flow
@@ -159,19 +160,11 @@ dependencies {
 
 The API is not settled before 1.0 and may change between minor versions.
 
-The library reads YAML with [kotaml](https://github.com/Heapy/kotaml)
-(`io.heapy.kotaml:kotaml`), a fork of kaml that keeps kaml's package,
-`com.charleskorn.kaml`. A project that also depends on kaml itself
-(`com.charleskorn.kaml:kaml`) gets two sets of the same classes on its classpath;
-keep one of the two, or exclude one from the other's dependency. Neither appears
-in this library's public API.
-
-The library also depends directly on
+The library reads YAML with
 [snakeyaml-engine-kmp](https://github.com/krzema12/snakeyaml-engine-kmp)
-(`it.krzeminski:snakeyaml-engine-kmp`), whose parser events it reads to find the
-first YAML problem in a work. kotaml brings the same library, and the version
-declared here has to be the one the declared kotaml version requires; raising
-one means raising the other to match.
+(`it.krzeminski:snakeyaml-engine-kmp`), going once over its parser events: the
+same pass finds the first YAML problem in a work and builds what the work is read
+from. It does not appear in this library's public API.
 
 ## Documentation
 

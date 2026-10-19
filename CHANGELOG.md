@@ -15,6 +15,57 @@ a *work file*, sections holding pieces as an author writes them, as an assembled
 *book*, the flat form with `pieces`, `parts`, `stage_field` and `difficult_words`,
 or is built in code with `WorkCorpus.work` from values the app already holds.
 
+## Unreleased
+
+### Removed
+
+- Breaking: the library no longer depends on kotaml, the fork of kaml it read
+  YAML with, and `Work.serializer()` no longer reads YAML through kaml's `Yaml`
+  format. It reads JSON only, as do the serializers of `Piece`, `Part`,
+  `StageFieldScale` and `DifficultWordsConfiguration`; given a decoder of any
+  other format they throw `WorkCorpus.DocumentError`, saying that YAML is read
+  with `decodeWork` or `decodeWorkFromBook`. Read a YAML book with
+  `decodeWorkFromBook` instead:
+
+  ```kotlin
+  // 0.7
+  val work = Yaml.default.decodeFromString(Work.serializer(), yaml)
+  // from this release
+  val work = WorkCorpus.decodeWorkFromBook(yaml)
+  ```
+
+  Unlike the kaml path, `decodeWorkFromBook` checks the whole work — pieces
+  numbered from one, parts that cover them, free pieces, stage field bounds and
+  the threshold — and holds it to the YAML rules, such as refusing an explicit
+  tag, which the kaml path read past. Reading JSON does not change:
+
+  ```kotlin
+  // 0.7 and from this release
+  val work = Json.decodeFromString(Work.serializer(), json)
+  ```
+- A project that uses kaml (`com.charleskorn.kaml:kaml`) itself no longer gets a
+  second copy of its classes through this library, so it need not exclude one.
+
+### Changed
+
+- A YAML work followed by a second document, such as one that starts with `---`
+  after the work, is refused with `DocumentError`, "The work cannot be read as
+  YAML: a second document follows it.", whatever the second document holds, as
+  workcorpus-swift refuses it. Before, an anchor, tag or repeated key in the
+  second document was named as `YamlReference`, `ExplicitTag` or `RepeatedKey`.
+  A problem in the work itself is still named first. One document between `---`
+  and `...` is read as before.
+- A key written as YAML null, such as `null:` or `~:`, is read as that text, as
+  in workcorpus-swift, and as no field of a work has such a name, it is skipped
+  like any key the work does not know. Before, the work was refused with
+  `DocumentError`.
+
+### Fixed
+
+- A character YAML does not allow, such as a control character inside a line,
+  reached the caller as snakeyaml-engine's own `ReaderException`. It is now a
+  `DocumentError`, with the parser's error kept as its cause.
+
 ## 0.7.0
 
 Nothing changes in the Kotlin library. The version follows workcorpus-swift 0.7.0,

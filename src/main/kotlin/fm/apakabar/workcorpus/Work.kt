@@ -14,13 +14,13 @@ import kotlinx.serialization.encoding.encodeStructure
 /**
  * A reading work and the configuration used to present it.
  *
- * Decode through [WorkCorpus.decodeWork] or [WorkCorpus.decodeWorkFromBook] to validate
- * the complete work before use: they parse the YAML themselves, so they alone refuse the
- * YAML problems below. [serializer] also reads a work from JSON with kotlinx.serialization,
- * holding its numbers, fractions and texts to the rules below, as the shared cases test with
- * the default `Json`, but it does not validate relationships between the fields. A syntax
- * error in the JSON reaches the caller as kotlinx.serialization's own error, raised before
- * the library sees the document.
+ * Decode YAML through [WorkCorpus.decodeWork] or [WorkCorpus.decodeWorkFromBook], which
+ * validate the complete work before use and alone read YAML, refusing the YAML problems
+ * below. [serializer] reads a work from JSON with kotlinx.serialization, holding its numbers,
+ * fractions and texts to the rules below, as the shared cases test with the default `Json`,
+ * but it does not validate relationships between the fields. A syntax error in the JSON
+ * reaches the caller as kotlinx.serialization's own error, raised before the library sees the
+ * document; a decoder of any other format is refused with [WorkCorpus.DocumentError].
  *
  * Every number a work carries, from piece numbers to cut sizes, is a YAML integer that
  * fits in 32 bits, written as plain decimal digits: `0`, or digits that do not start

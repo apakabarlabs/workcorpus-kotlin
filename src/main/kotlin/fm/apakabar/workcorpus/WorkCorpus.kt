@@ -187,8 +187,9 @@ object WorkCorpus {
     /**
      * Decodes a nested work-file YAML document and validates the resulting work.
      *
-     * @throws DocumentError when the document is not YAML, or a field is missing or holds
-     * another kind of value than it names, such as `elisions` left null.
+     * @throws DocumentError when the document is not YAML or is followed by a second YAML
+     * document, or a field is missing or holds another kind of value than it names, such as
+     * `elisions` left null.
      * @throws WorkError.PieceIsNotNumbered when a piece or free-piece identifier is not a
      * whole number within 32 bits.
      * @throws WorkShapeError when a number is not a YAML integer within 32 bits, a fraction
@@ -202,8 +203,9 @@ object WorkCorpus {
     /**
      * Decodes an assembled book YAML document and validates the resulting work.
      *
-     * @throws DocumentError when the document is not YAML, or a field is missing or holds
-     * another kind of value than it names, such as `elisions` left null.
+     * @throws DocumentError when the document is not YAML or is followed by a second YAML
+     * document, or a field is missing or holds another kind of value than it names, such as
+     * `elisions` left null.
      * @throws WorkShapeError when a number is not a YAML integer within 32 bits, a fraction
      * is not written in plain digits, a text is null, a key is repeated, a value is written
      * with a YAML anchor, alias or merge key, a piece's cuts do not divide its lines, or the

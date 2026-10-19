@@ -12,9 +12,10 @@ or shorter than their piece, and cuts for a stage that is not a cut reading stag
 are refused with the piece and the stage named. A stage the work says nothing
 about is read line by line. A work is written out in full: YAML anchors, aliases,
 `<<` merge keys and explicit tags are refused, naming where they stand, and so is a
-key named twice in one mapping; of several, the first in the document. These YAML
-rules hold through `decodeWork` and `decodeWorkFromBook`, which parse the YAML
-themselves, and are not applied when `Work` is decoded directly. `WorkCorpus.work` assembles a work
+key named twice in one mapping; of several, the first in the document. A YAML
+document holds one work, and a second document after it is refused. YAML is read
+only through `decodeWork` and `decodeWorkFromBook`; `Work` decoded directly with
+kotlinx.serialization is read from JSON. `WorkCorpus.work` assembles a work
 from its language, interior marks and elisions and the `HeldPiece` and `HeldReading`
 values a caller already holds, and validates it the same way.
 

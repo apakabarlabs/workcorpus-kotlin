@@ -1,9 +1,14 @@
 package fm.apakabar.workcorpus
 
-import com.charleskorn.kaml.Yaml
+import it.krzeminski.snakeyaml.engine.kmp.api.Load
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
 import kotlin.test.assertEquals
@@ -92,7 +97,18 @@ data class WorkCases(
     val cases: List<WorkCase>,
 ) {
     companion object {
-        fun shared(): WorkCases = Yaml.default.decodeFromString(serializer(), Fixtures.text("work-cases"))
+        fun shared(): WorkCases = Json.decodeFromJsonElement(serializer(), json(Load().loadOne(Fixtures.text("work-cases"))))
+
+        private fun json(value: Any?): JsonElement =
+            when (value) {
+                null -> JsonNull
+                is String -> JsonPrimitive(value)
+                is Number -> JsonPrimitive(value)
+                is Boolean -> JsonPrimitive(value)
+                is List<*> -> JsonArray(value.map(::json))
+                is Map<*, *> -> JsonObject(value.entries.associate { (key, item) -> key as String to json(item) })
+                else -> error("work-cases.yaml holds a ${value::class.simpleName}, which no shared case is written as")
+            }
     }
 }
 

@@ -54,7 +54,7 @@ class LargeWorkTests {
     }
 
     @Test
-    fun `a book of more code points than kaml reads by default is read`() {
+    fun `a book of more code points than snakeyaml-engine reads by default is read`() {
         val line = "A line of verse, ".repeat(40)
         val book = book(repeatingInLast = false).replace("[A line of verse.]", "['$line']")
 

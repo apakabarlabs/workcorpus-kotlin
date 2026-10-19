@@ -1,7 +1,11 @@
 package fm.apakabar.workcorpus
 
-import com.charleskorn.kaml.Yaml
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.AbstractDecoder
+import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.EmptySerializersModule
+import kotlinx.serialization.modules.SerializersModule
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -10,10 +14,19 @@ import kotlin.test.assertTrue
 
 class WorkTests {
     @Test
-    fun `configuration is validated from the YAML model itself`() {
-        val book = Yaml.default.decodeFromString(Work.serializer(), Fixtures.text("book-with-listening"))
+    fun `the serializer reads a work from JSON alone, and sends YAML to the decoding functions`() {
+        val error = assertFailsWith<WorkCorpus.DocumentError> { Work.serializer().deserialize(OtherFormat) }
 
-        WorkCorpus.validateConfiguration(book)
+        assertEquals(
+            "A work is read from JSON, not from OtherFormat; YAML is read with WorkCorpus.decodeWork or decodeWorkFromBook.",
+            error.message,
+        )
+    }
+
+    private object OtherFormat : AbstractDecoder() {
+        override val serializersModule: SerializersModule = EmptySerializersModule()
+
+        override fun decodeElementIndex(descriptor: SerialDescriptor): Int = CompositeDecoder.DECODE_DONE
     }
 
     @Test

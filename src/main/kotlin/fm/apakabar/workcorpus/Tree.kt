@@ -1,15 +1,5 @@
 package fm.apakabar.workcorpus
 
-import com.charleskorn.kaml.Yaml
-import com.charleskorn.kaml.YamlConfiguration
-import com.charleskorn.kaml.YamlException
-import com.charleskorn.kaml.YamlInput
-import com.charleskorn.kaml.YamlList
-import com.charleskorn.kaml.YamlMap
-import com.charleskorn.kaml.YamlNode
-import com.charleskorn.kaml.YamlNull
-import com.charleskorn.kaml.YamlScalar
-import com.charleskorn.kaml.YamlTaggedNode
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonDecoder
@@ -43,49 +33,13 @@ internal sealed class Node {
     ) : Node()
 }
 
-private val unlimitedYaml = Yaml(configuration = YamlConfiguration(codePointLimit = Int.MAX_VALUE))
-
-internal fun parseYaml(yaml: String): Node {
-    refuseYamlProblems(yaml)
-    val root =
-        try {
-            unlimitedYaml.parseToYamlNode(yaml)
-        } catch (failure: YamlException) {
-            throw WorkCorpus.DocumentError("The work cannot be read as YAML: ${failure.message}", failure)
-        }
-    return yamlNode(root, place = "")
-}
-
 internal fun treeOf(decoder: Decoder): Node =
     when (decoder) {
-        is YamlInput -> yamlNode(decoder.node, place = "")
         is JsonDecoder -> jsonNode(decoder.decodeJsonElement(), place = "")
-        else -> throw WorkCorpus.DocumentError("A work is read from YAML or JSON, not from ${decoder::class.simpleName}.")
-    }
-
-private val CORE_SCHEMA_NULLS = setOf("", "~", "null", "Null", "NULL")
-
-private fun yamlNode(
-    node: YamlNode,
-    place: String,
-): Node =
-    when (node) {
-        is YamlNull -> Node.Null(place)
-        is YamlScalar ->
-            if (node.plain && node.content in CORE_SCHEMA_NULLS) {
-                Node.Null(place)
-            } else {
-                Node.Scalar(place, node.content, bare = node.plain, json = false)
-            }
-        is YamlList -> Node.Sequence(place, node.items.mapIndexed { index, item -> yamlNode(item, "$place[$index]") })
-        is YamlMap ->
-            Node.Mapping(
-                place,
-                node.entries.entries.associate { (key, value) ->
-                    key.content to yamlNode(value, within(place, key.content))
-                },
-            )
-        is YamlTaggedNode -> yamlNode(node.innerNode, place)
+        else -> throw WorkCorpus.DocumentError(
+            "A work is read from JSON, not from ${decoder::class.simpleName}; " +
+                "YAML is read with WorkCorpus.decodeWork or decodeWorkFromBook.",
+        )
     }
 
 private fun jsonNode(

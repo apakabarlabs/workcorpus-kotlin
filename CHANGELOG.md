@@ -60,20 +60,21 @@ or is built in code with `WorkCorpus.work` from values the app already holds.
 - An empty YAML document, or one holding only comments, is refused with
   `DocumentError` "The work's top level is not a mapping." rather than "The work
   cannot be read as YAML: The YAML document is empty."
-
 - A YAML work followed by a second document, such as one that starts with `---`
   after the work, is refused with `DocumentError`, "The work cannot be read as
-  YAML: a second document follows it.", whatever the second document holds, as
-  workcorpus-swift refuses it. Before, an anchor, tag or repeated key in the
-  second document was named as `YamlReference`, `ExplicitTag` or `RepeatedKey`.
-  A problem in the work itself is still named first. One document between `---`
-  and `...` is read as before.
+  YAML: a second document follows it.", whatever the second document holds, even
+  an anchor, as workcorpus-swift refuses it. Before, an anchor, tag or repeated
+  key in the second document was named as `YamlReference`, `ExplicitTag` or
+  `RepeatedKey`. A problem in the work itself, such as an anchor, is still named
+  first, with `WorkShapeError.YamlReference`. One document between `---` and
+  `...` is read as before. Shared cases now hold both ports to this.
 - A key written as YAML null, such as `null:` or `~:`, is read as that text, as
   in workcorpus-swift. In a mapping of fixed fields, such as the top level of a
   book or a piece, no field has such a name, so the key is skipped like any key
   the work does not know. In `elisions`, whose keys are the work's own spellings,
   it is kept: `null: [none]` gives `elisions["null"] == listOf("none")`. Before,
-  either was refused with `DocumentError`.
+  either was refused with `DocumentError`. Shared cases now hold both ports to
+  this.
 
 ### Fixed
 

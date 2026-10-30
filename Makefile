@@ -1,6 +1,7 @@
 .DEFAULT_GOAL := build
+VERSION = $(shell sed -n 's/^## \([0-9][0-9.]*\)$$/\1/p' CHANGELOG.md | head -1)
 
-.PHONY: build test test-build docs comments lint lint-fix format clean install install-tools publish publish-local publish-check
+.PHONY: build test test-build docs comments lint lint-fix format clean install install-tools release publish publish-local publish-check
 
 install-tools:
 	python3 -m pip install --quiet --upgrade git+https://github.com/botforge-pro/commentcensor.git
@@ -34,6 +35,9 @@ install:
 
 build: lint test-build test docs
 	./gradlew assemble
+
+release:
+	gh workflow run release.yml --repo apakabarlabs/workcorpus-kotlin --ref main -f version=$(VERSION)
 
 publish:
 	@test -n "$(CI)" || { echo "publish runs in the release workflow, not locally" >&2; exit 1; }

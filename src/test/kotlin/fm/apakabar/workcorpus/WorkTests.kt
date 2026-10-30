@@ -1,5 +1,6 @@
 package fm.apakabar.workcorpus
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.AbstractDecoder
 import kotlinx.serialization.encoding.CompositeDecoder
@@ -23,6 +24,7 @@ class WorkTests {
         )
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     private object OtherFormat : AbstractDecoder() {
         override val serializersModule: SerializersModule = EmptySerializersModule()
 
@@ -85,9 +87,27 @@ class WorkTests {
     fun `a JSON work whose elisions are null is refused, naming the key`() {
         val json = """{"language": "eng", "interior_marks": "", "elisions": null}"""
 
-        val error = assertFailsWith<WorkCorpus.DocumentError> { Json.decodeFromString(Work.serializer(), json) }
-        assertEquals("The work's elisions is not a mapping.", error.message)
+        for (decode in jsonDecoders(json)) {
+            val error = assertFailsWith<WorkCorpus.DocumentError> { decode() }
+            assertEquals("The work's elisions is not a mapping.", error.message)
+        }
     }
+
+    @Test
+    fun `a JSON work whose interior marks are null preserves the named shape error`() {
+        val json = """{"language": "eng", "interior_marks": null}"""
+
+        for (decode in jsonDecoders(json)) {
+            val error = assertFailsWith<WorkCorpus.WorkShapeError.NullText> { decode() }
+            assertEquals(WorkCorpus.WorkShapeError.NullText("interior_marks").message, error.message)
+        }
+    }
+
+    private fun jsonDecoders(document: String): List<() -> Work> =
+        listOf(
+            { Json.decodeFromString(Work.serializer(), document) },
+            { Json.decodeFromJsonElement(Work.serializer(), Json.parseToJsonElement(document)) },
+        )
 
     @Test
     fun `what is wrong with a language is said with the value written out`() {

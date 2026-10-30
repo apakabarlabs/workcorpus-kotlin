@@ -20,8 +20,8 @@ version =
     ) { "CHANGELOG.md has no released version heading" }.groupValues[1]
 
 dependencies {
-    implementation("it.krzeminski:snakeyaml-engine-kmp:4.0.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("it.krzeminski:snakeyaml-engine-kmp:5.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
 
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.3")

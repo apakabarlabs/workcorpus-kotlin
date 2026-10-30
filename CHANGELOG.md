@@ -15,6 +15,20 @@ a *work file*, sections holding pieces as an author writes them, as an assembled
 *book*, the flat form with `pieces`, `parts`, `stage_field` and `difficult_words`,
 or is built in code with `WorkCorpus.work` from values the app already holds.
 
+## 0.8.1
+
+### Fixed
+
+- Read YAML alongside kotaml 0.112.0, which uses snakeyaml-engine-kmp 5.0.0.
+  The library now requires engine 5 rather than 4; using the earlier library
+  with engine 5 failed with `NoSuchMethodError` when reading a work. Update
+  WorkCorpus and kotaml together. The decoding methods and document rules are
+  unchanged.
+- Preserve `DocumentError` and `WorkShapeError` when decoding JSON with
+  kotlinx.serialization 1.12.0, rather than wrapping them in its decoding
+  exception. Both now extend `SerializationException`, so catches of their
+  concrete types still work; they also become `IllegalArgumentException`s.
+
 ## 0.8.0
 
 ### Removed

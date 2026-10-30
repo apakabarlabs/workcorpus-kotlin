@@ -1,5 +1,7 @@
 package fm.apakabar.workcorpus
 
+import kotlinx.serialization.SerializationException
+
 /**
  * Decodes, assembles, and validates portable reading works.
  *
@@ -29,7 +31,7 @@ object WorkCorpus {
     class DocumentError internal constructor(
         message: String,
         cause: Throwable? = null,
-    ) : Exception(message, cause) {
+    ) : SerializationException(message, cause) {
         override fun toString(): String = "${javaClass.name}: $message"
     }
 
@@ -51,7 +53,7 @@ object WorkCorpus {
     /** The work, or one of its pieces, is not shaped the way a work has to be. */
     sealed class WorkShapeError(
         message: String,
-    ) : Exception(message) {
+    ) : SerializationException(message) {
         /** The parts leave a gap, overlap, or stop short of the last piece. */
         class PartsDoNotCoverTheWork : WorkShapeError("The parts do not cover the work exactly once.")
 

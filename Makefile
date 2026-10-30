@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := build
-VERSION = $(shell sed -n 's/^## \([0-9][0-9.]*\)$$/\1/p' CHANGELOG.md | head -1)
+VERSION = $(shell sed -n 's/^\#\# //p' CHANGELOG.md | head -1)
 
 .PHONY: build test test-build docs comments lint lint-fix format clean install install-tools release publish publish-local publish-check
 

@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := build
 VERSION = $(shell sed -n 's/^\#\# //p' CHANGELOG.md | head -1)
 
-.PHONY: build test test-build docs comments lint lint-fix format clean install install-tools release publish publish-local publish-check
+.PHONY: build test test-build docs comments lint lint-fix format install install-tools release publish publish-local publish-check
 
 install-tools:
 	python3 -m pip install --quiet --upgrade git+https://github.com/botforge-pro/commentcensor.git
@@ -25,9 +25,6 @@ lint-fix:
 	./gradlew ktlintFormat
 
 format: lint-fix
-
-clean:
-	./gradlew clean
 
 install:
 	$(MAKE) install-tools

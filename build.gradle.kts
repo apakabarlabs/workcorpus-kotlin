@@ -21,7 +21,7 @@ version =
 
 dependencies {
     implementation("it.krzeminski:snakeyaml-engine-kmp:5.0.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.13.0")
 
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.3")
